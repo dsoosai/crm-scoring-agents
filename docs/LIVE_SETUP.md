@@ -4,6 +4,8 @@ Local mode needs nothing. This guide adds the real systems one at a time. Each s
 
 Order: GitHub, Hugging Face Space, Salesforce, Snowflake, then GitHub Actions.
 
+Snowflake is optional. Without it, DuckDB stays the warehouse and every other step works.
+
 ## 1. GitHub
 
 ```bash
@@ -39,6 +41,8 @@ npm install -g @salesforce/cli
 sf org login web --alias crm-dev
 ```
 
+   Run this on your own machine. The login opens a browser and needs a direct connection to salesforce.com, so it fails in sandboxes and cloud shells.
+
 3. Deploy the fields, permission set and Apex action, and assign the permission set to yourself:
 
 ```bash
@@ -57,6 +61,8 @@ make sf-deploy
 
    No CLI? Use Workbench instead. Log in at workbench.developerforce.com with your org, open Migration, Deploy, choose `salesforce/deploy/metadata.zip`, tick "Single Package" and "Rollback On Error", set the test level to "RunSpecifiedTests" with `ScoreExplainActionTest`, and deploy. Then assign the `CRM_Score_Agent` permission set to yourself in Setup.
 
+   On the Workbench login page, pick the newest API version your org supports (`/services/data/` on your org lists them). A version the org does not support fails the login and signs you out of Salesforce.
+
 5. Seed a small sample (Developer Edition storage is small) and run a cycle that writes to the org:
 
 ```bash
@@ -70,7 +76,7 @@ The agents only update records that carry `CRM_Score_Ext_Id__c`. They never crea
 
 6. Build the Agentforce action: [salesforce/AGENTFORCE_SETUP.md](../salesforce/AGENTFORCE_SETUP.md).
 
-## 4. Snowflake trial (the partner warehouse)
+## 4. Snowflake trial (optional, the partner warehouse)
 
 1. Start a trial at signup.snowflake.com. Any cloud and region.
 2. Make a key pair on your Mac:

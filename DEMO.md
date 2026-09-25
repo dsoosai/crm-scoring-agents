@@ -5,7 +5,7 @@ Seven minutes. The dashboard carries the story; the live run proves it is real. 
 ## Before you walk in
 
 - [ ] `make demo-live` on the laptop you will present from. Then `make a2a` in one terminal.
-- [ ] `space/index.html` open in a browser tab. The Hugging Face Space link as a backup.
+- [ ] `space/index.html` open in a browser tab. The Hugging Face Space as a backup: https://huggingface.co/spaces/dsoosai/crm-scoring-agents
 - [ ] Second terminal ready at the repo root.
 - [ ] If live mode is set up: the Salesforce org open on a seeded Account.
 - [ ] Wi-Fi off test: everything above runs offline.

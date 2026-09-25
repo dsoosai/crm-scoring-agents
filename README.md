@@ -4,6 +4,8 @@ Agent lifecycle management for CRM scoring models. Three agents keep a lead scor
 
 The lead score rebuilds monthly on the latest leads. The account score rescores the whole book every quarter.
 
+Live dashboard: [huggingface.co/spaces/dsoosai/crm-scoring-agents](https://huggingface.co/spaces/dsoosai/crm-scoring-agents)
+
 ## Why this exists
 
 The original notebooks ([AccountScoring_Sample](https://github.com/dsoosai/AccountScoring_Sample)) score with hand-set weights and never see an outcome. They cannot learn and cannot tell you when they are wrong. They also carry a quiet bug: every one-hot category gets the same weight, so industry, role, department and keyword add the same constant to every record. The v0 lead score is really `0.30 + 0.20 * site_visits / max`.
@@ -31,7 +33,7 @@ What happened along the way:
 - **2026Q2, accounts.** Expansion now follows product adoption, not margin. A warm-start fine-tune adapts faster than a full retrain and is promoted after RevOps approval.
 - **2026Q3, accounts.** A new segment, Public Sector, reaches 8% of the book. A retrain that knows it is chosen over an equally accurate fine-tune that does not.
 
-Open `space/index.html` after a run for the full timeline.
+Open `space/index.html` after a run, or the [live dashboard](https://huggingface.co/spaces/dsoosai/crm-scoring-agents), for the full timeline.
 
 ## Architecture
 
@@ -97,6 +99,8 @@ The Builder Agent cannot promote. The Governance Agent cannot train. Separation 
 
 ## Quick start (local, no accounts needed)
 
+Needs Python 3.11 or later. On a Mac where `python3` is older, run `make setup PY=python3.13`.
+
 ```bash
 git clone https://github.com/dsoosai/crm-scoring-agents && cd crm-scoring-agents
 make setup          # venv, pinned libraries, package
@@ -154,6 +158,8 @@ Everything above runs with no accounts. Live mode swaps the backends with enviro
 | --- | --- | --- |
 | `CRM_WAREHOUSE` | `duckdb` | `snowflake` |
 | `CRM_TARGET` | `mock` | `salesforce` |
+
+Each switch is independent. Salesforce works without Snowflake: DuckDB stays the warehouse.
 
 Step-by-step setup is in [docs/LIVE_SETUP.md](docs/LIVE_SETUP.md). The Salesforce metadata (six fields per object, a permission set and an Agentforce Apex action) is in [salesforce/](salesforce/). The Agentforce agent setup is in [salesforce/AGENTFORCE_SETUP.md](salesforce/AGENTFORCE_SETUP.md).
 
