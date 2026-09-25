@@ -1,0 +1,13 @@
+ACCOUNT_KEY,ACCOUNT_NAME,INDUSTRY,EMPLOYEES,REGION,CUSTOMER_SINCE,SF_EXT_ID
+OMEGA,Omega Inc.,Technology,4200,US West,2023-03-01,A-OMEGA
+NORTHWIND,Northwind Analytics,Technology,1800,US East,2022-06-15,A-NORTHWIND
+HELIX,Helix Software,Technology,3100,US West,2021-11-01,A-HELIX
+QUANTA,Quanta Systems,Technology,5200,EMEA,2023-01-20,A-QUANTA
+PINECREST,Pinecrest Labs,Technology,950,US Central,2024-02-10,A-PINECREST
+ORBIT,Orbit Payments,Financial Services,2600,US East,2022-09-01,A-ORBIT
+KEYSTONE,Keystone Financial,Financial Services,7400,US East,2021-05-01,A-KEYSTONE
+BRIGHTLINE,Brightline Health,Healthcare,6100,US Central,2023-07-01,A-BRIGHTLINE
+COBALT,Cobalt Retail Group,Retail,12000,US West,2022-03-15,A-COBALT
+VERTEX,Vertex Manufacturing,Manufacturing,8800,APAC,2023-10-01,A-VERTEX
+LUMEN,Lumen Media,Media,1400,US West,2024-04-01,A-LUMEN
+SUMMIT,Summit Insurance,Insurance,5600,US East,2022-12-01,A-SUMMIT

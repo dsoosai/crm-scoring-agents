@@ -6,6 +6,8 @@ The lead score rebuilds monthly on the latest leads. The account score rescores 
 
 Live dashboard: [huggingface.co/spaces/dsoosai/crm-scoring-agents](https://huggingface.co/spaces/dsoosai/crm-scoring-agents)
 
+New: the **Agentic Enterprise demo** puts these scores to work. Agentforce agents on Claude read live telemetry from Snowflake, build account plans and route support cases by CRM tier. See [docs/AGENTFORCE_DEMO.md](docs/AGENTFORCE_DEMO.md).
+
 ## Why this exists
 
 The original notebooks ([AccountScoring_Sample](https://github.com/dsoosai/AccountScoring_Sample)) score with hand-set weights and never see an outcome. They cannot learn and cannot tell you when they are wrong. They also carry a quiet bug: every one-hot category gets the same weight, so industry, role, department and keyword add the same constant to every record. The v0 lead score is really `0.30 + 0.20 * site_visits / max`.
@@ -163,6 +165,19 @@ Each switch is independent. Salesforce works without Snowflake: DuckDB stays the
 
 Step-by-step setup is in [docs/LIVE_SETUP.md](docs/LIVE_SETUP.md). The Salesforce metadata (six fields per object, a permission set and an Agentforce Apex action) is in [salesforce/](salesforce/). The Agentforce agent setup is in [salesforce/AGENTFORCE_SETUP.md](salesforce/AGENTFORCE_SETUP.md).
 
+## Agentic Enterprise demo: Agentforce, Claude and Snowflake
+
+Four use cases on one fictional account, Omega Inc.:
+
+| Use case | Built with |
+| --- | --- |
+| AE sales strategy agent | Agent Script employee agent, Apex actions, Claude prompt templates, Snowflake SQL API and Cortex agent |
+| Automated account plan | Record-triggered flow, chained queueables, five Claude prompt templates grounded in Snowflake |
+| Support case intake agent | Agent Script service agent, Cortex Search knowledge base, routing by CRM tier |
+| Observability and audit | Agent Audit Log object, Snowflake query history, feedback capture |
+
+Telemetry stays in Snowflake and is read live through a named credential with a programmatic access token scoped to a read-only role. The demo script, architecture and setup runbook are in [docs/AGENTFORCE_DEMO.md](docs/AGENTFORCE_DEMO.md). Metadata is in [agentforce/](agentforce/), Snowflake SQL in [snowflake/agentic/](snowflake/agentic/), the walkthrough page is `space/agentic.html` and the data is on Hugging Face at [dsoosai/agentic-enterprise-demo](https://huggingface.co/datasets/dsoosai/agentic-enterprise-demo).
+
 ## Policy lives in config
 
 `config/lifecycle.yaml` holds cadence, windows, drift thresholds and gates. Change policy there, not in code.
@@ -187,6 +202,8 @@ crmscore/
   dashboard.py           static dashboard, also the Hugging Face Space
 salesforce/              fields, permission set, Apex action and test
 snowflake/               setup and views
+agentforce/              Agentic Enterprise demo: agents, Apex, templates, flow, objects, data
+snowflake/agentic/       telemetry tables, views, Cortex Search, semantic view, Cortex agent, access
 config/lifecycle.yaml    policy
 .github/workflows/       CI, live cycle, Space publish
 ```
@@ -196,6 +213,7 @@ config/lifecycle.yaml    policy
 - The data is synthetic. The drift is scripted so every lifecycle path gets exercised.
 - The A2A layer implements agent cards and `message/send` only. No streaming or push notifications.
 - Live mode does not ingest from Salesforce into Snowflake. In production that is a connector or Data 360.
+- The Agentforce demo reads Snowflake through Apex callouts because a Developer Edition org cannot run Data 360 zero-copy federation. The principle is the same: the data is read where it lives.
 - DuckDB is single-writer. Run the MCP server and the A2A server one at a time locally. Snowflake has no such limit.
 - The LLM, if configured, only writes the cycle summary. Promotions are decided by gates, not by a model.
 

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiPromptTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Account plan section: 12-month vision, objectives and 90-day plan, built on the other drafted sections.</description>
+    <developerName>Plan_Vision</developerName>
+    <masterLabel>Account Plan: Account Vision</masterLabel>
+    <templateVersions>
+        <content>You are a strategy analyst helping {!$User.FirstName} {!$User.LastName}, an account executive at {!$Organization.Name}, write a strategic account plan. The data below comes from Salesforce (CRM) and from Snowflake (product telemetry, peer adoption and customer case studies), read when this plan was generated.
+
+&lt;data&gt;
+{!$Apex:AccountPlanContext.Prompt}
+&lt;/data&gt;
+
+Write the Account Vision section. Build on the drafted sections in the data.
+&lt;p&gt;&lt;b&gt;Vision&lt;/b&gt;&lt;/p&gt;: two sentences on where this account can be in 12 months.
+&lt;p&gt;&lt;b&gt;Objectives&lt;/b&gt;&lt;/p&gt;: three objectives, each with a measurable target taken from or derived from the data.
+&lt;p&gt;&lt;b&gt;90-day plan&lt;/b&gt;&lt;/p&gt;: four to six dated actions with an owner role. Anchor dates to deadlines in the CRM notes and the contract term end.
+&lt;p&gt;&lt;b&gt;Executive ask&lt;/b&gt;&lt;/p&gt;: one sentence on what we need from the customer sponsor.
+At most 250 words. Write plain business English in short sentences. Do not use em dashes. Use only facts in the data. If something is not in the data, say it is unknown. Never invent numbers, names, dates or quotes. Return only HTML that uses these tags: &lt;p&gt;, &lt;b&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;br&gt;. Start each sub-heading as &lt;p&gt;&lt;b&gt;Heading&lt;/b&gt;&lt;/p&gt;. No Markdown, no code fences, no other tags.</content>
+        <inputs>
+            <apiName>planId</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>planId</masterLabel>
+            <referenceName>Input:planId</referenceName>
+            <required>true</required>
+        </inputs>
+        <primaryModel>sfdc_ai__DefaultBedrockAnthropicClaude45Sonnet</primaryModel>
+        <status>Published</status>
+        <templateDataProviders>
+            <definition>apex://AccountPlanContext</definition>
+            <parameters>
+                <definition>primitive://String</definition>
+                <isRequired>true</isRequired>
+                <parameterName>planId</parameterName>
+                <valueExpression>{!$Input:planId}</valueExpression>
+            </parameters>
+            <referenceName>Apex:AccountPlanContext</referenceName>
+        </templateDataProviders>
+    </templateVersions>
+    <type>einstein_gpt__flex</type>
+    <visibility>Global</visibility>
+</GenAiPromptTemplate>

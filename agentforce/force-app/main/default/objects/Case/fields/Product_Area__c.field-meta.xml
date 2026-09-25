@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Product_Area__c</fullName>
+    <description>Set by the support intake agent.</description>
+    <label>Product Area</label>
+    <required>false</required>
+    <valueSet><restricted>true</restricted><valueSetDefinition><sorted>false</sorted><value><fullName>Performance</fullName><default>false</default><label>Performance</label></value><value><fullName>Data Loading</fullName><default>false</default><label>Data Loading</label></value><value><fullName>Security and Access</fullName><default>false</default><label>Security and Access</label></value><value><fullName>Cost Management</fullName><default>false</default><label>Cost Management</label></value><value><fullName>AI and ML</fullName><default>false</default><label>AI and ML</label></value><value><fullName>Data Sharing</fullName><default>false</default><label>Data Sharing</label></value><value><fullName>Billing and Contracts</fullName><default>false</default><label>Billing and Contracts</label></value><value><fullName>Other</fullName><default>false</default><label>Other</label></value></valueSetDefinition></valueSet>
+    <type>Picklist</type>
+</CustomField>

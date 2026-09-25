@@ -1,0 +1,17 @@
+{
+  "account_id": "A-OMEGA",
+  "account_name": "Omega Inc.",
+  "period": "2026Q3",
+  "industry": "Technology",
+  "department": "Operations",
+  "employees": 4200,
+  "sales": 310000.0,
+  "revenue": 402000.0,
+  "profit": 88000.0,
+  "transactions": 38,
+  "product_usage_pct": 91.5,
+  "support_tickets": 3,
+  "csat": 4.3,
+  "days_since_last_activity": 2,
+  "open_opps": 2
+}

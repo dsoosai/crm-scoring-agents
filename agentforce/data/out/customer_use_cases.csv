@@ -1,0 +1,30 @@
+ACCOUNT_KEY,USE_CASE_ID,STATUS,GO_LIVE_DATE,ANNUAL_CREDITS,OUTCOME
+OMEGA,UC06,Live,2023-09-15,13500,Daily product adoption dashboards for 40 product managers
+OMEGA,UC12,Live,2024-02-01,1800,Budgets and monitors on every warehouse
+OMEGA,UC04,Pilot,2026-04-01,9000,Support copilot pilot on 2 product lines
+NORTHWIND,UC01,Live,2024-05-01,9400,Lead-to-opportunity conversion up 18 percent
+NORTHWIND,UC02,Live,2024-09-01,7200,Forecast error down 29 percent
+NORTHWIND,UC12,Live,2023-01-10,1500,Chargeback by team
+HELIX,UC04,Live,2025-02-01,13800,First response time down 58 percent
+HELIX,UC01,Live,2024-11-01,8800,Account expansion pipeline up 22 percent
+HELIX,UC03,Live,2025-06-01,8100,Gross retention up 3 points
+QUANTA,UC02,Live,2024-03-01,8600,Forecast error down 32 percent
+QUANTA,UC01,Live,2024-08-01,10200,Rep capacity on top-tier accounts up 25 percent
+QUANTA,UC06,Live,2023-06-01,16000,Activation funnel visible daily
+PINECREST,UC01,Live,2025-01-15,6100,Win rate on scored leads up 14 percent
+PINECREST,UC03,Live,2025-04-01,5400,Churn flagged 60 days earlier
+PINECREST,UC02,Pilot,2026-06-01,4000,Forecast pilot for two segments
+ORBIT,UC10,Live,2023-04-01,12500,Fraud losses down 21 percent
+ORBIT,UC01,Live,2024-10-01,7900,SMB lead conversion up 11 percent
+KEYSTONE,UC10,Live,2022-08-01,15500,Alert precision doubled
+KEYSTONE,UC05,Live,2025-03-01,11200,Advisor 360 view across three CRMs
+BRIGHTLINE,UC08,Live,2024-06-01,5200,Claims intake review time down 68 percent
+BRIGHTLINE,UC04,Live,2025-05-01,10400,Nurse line answers grounded in policy
+COBALT,UC09,Live,2023-09-01,17800,Forecast accuracy up 9 points
+COBALT,UC07,Live,2024-04-01,6600,Paid media efficiency up 12 percent
+VERTEX,UC09,Live,2024-05-01,14200,Expedite costs down 17 percent
+VERTEX,UC08,Pilot,2026-02-01,3000,Supplier invoice extraction pilot
+LUMEN,UC07,Live,2025-01-01,5100,Attribution across 11 channels
+LUMEN,UC03,Live,2025-08-01,4800,Subscriber churn down 2 points
+SUMMIT,UC03,Live,2024-02-01,7400,Policy lapse down 3 points
+SUMMIT,UC10,Live,2023-11-01,9800,Claims fraud referrals up 30 percent

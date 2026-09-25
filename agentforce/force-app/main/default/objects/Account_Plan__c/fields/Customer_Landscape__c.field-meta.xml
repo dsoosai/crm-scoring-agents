@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Customer_Landscape__c</fullName>
+    <description>Stakeholders, opportunities and open issues from CRM.</description>
+    <label>Customer Landscape</label>
+    <length>32768</length>
+    <visibleLines>15</visibleLines>
+    <type>Html</type>
+</CustomField>

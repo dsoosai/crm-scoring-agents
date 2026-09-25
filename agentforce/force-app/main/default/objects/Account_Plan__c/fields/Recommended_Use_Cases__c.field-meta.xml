@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Recommended_Use_Cases__c</fullName>
+    <description>Drafted from Snowflake peer adoption and Cortex Search case studies.</description>
+    <label>Recommended Use Cases</label>
+    <length>32768</length>
+    <visibleLines>15</visibleLines>
+    <type>Html</type>
+</CustomField>

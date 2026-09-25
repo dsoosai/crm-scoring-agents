@@ -16,3 +16,5 @@ dist/
 .DS_Store
 salesforce/.sf/
 salesforce/.sfdx/
+agentforce/.sf/
+agentforce/.sfdx/

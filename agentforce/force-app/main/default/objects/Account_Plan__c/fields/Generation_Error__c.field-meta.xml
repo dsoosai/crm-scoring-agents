@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Generation_Error__c</fullName>
+    <description>Last error, if generation failed.</description>
+    <label>Generation Error</label>
+    <length>4000</length>
+    <visibleLines>3</visibleLines>
+    <type>LongTextArea</type>
+</CustomField>

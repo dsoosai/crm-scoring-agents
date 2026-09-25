@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Projected_Exhaustion_Date__c</fullName>
+    <description>When capacity runs out at the current run rate.</description>
+    <label>Projected Exhaustion Date</label>
+    <required>false</required>
+    <type>Date</type>
+</CustomField>

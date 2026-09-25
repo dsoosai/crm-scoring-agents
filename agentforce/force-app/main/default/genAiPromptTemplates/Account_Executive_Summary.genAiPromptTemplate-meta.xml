@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiPromptTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Meeting-prep brief on an account, grounded in CRM data and live Snowflake telemetry. Used by the Sales Strategy Assistant.</description>
+    <developerName>Account_Executive_Summary</developerName>
+    <masterLabel>Account Executive Summary</masterLabel>
+    <templateVersions>
+        <content>You are a strategy analyst supporting {!$User.FirstName}, an account executive at {!$Organization.Name}. Write a short executive brief on one customer account to prepare for a meeting.
+
+The data comes from Salesforce (CRM) and Snowflake (product telemetry and peer adoption).
+
+&lt;data&gt;
+{!$Apex:AccountBriefContext.Prompt}
+&lt;/data&gt;
+
+Write the brief with these bold headings, in this order:
+**Snapshot**: one sentence on who they are, their CRM tier and score, and when the contract renews.
+**What the telemetry says**: three bullets with numbers: credits and growth, contract utilization and projected exhaustion, fastest-growing and declining workloads. Say whether the data is live from Snowflake or cached.
+**Why it matters**: two bullets that connect the telemetry to open opportunities, recent meeting notes and open support cases.
+**Recommended next play**: the one use case to propose next, the peer evidence for it, and which contact to take it to.
+**Risks to watch**: up to three bullets.
+
+Keep it under 250 words. Use hyphen bullets. Write plain business English in short sentences. Do not use em dashes. Use only facts in the data. If something is not in the data, say it is unknown. Never invent numbers, names, dates or quotes. The indicative list values are internal context. Do not state prices, discounts or contract terms.</content>
+        <inputs>
+            <apiName>accountId</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>accountId</masterLabel>
+            <referenceName>Input:accountId</referenceName>
+            <required>true</required>
+        </inputs>
+        <primaryModel>sfdc_ai__DefaultBedrockAnthropicClaude45Sonnet</primaryModel>
+        <status>Published</status>
+        <templateDataProviders>
+            <definition>apex://AccountBriefContext</definition>
+            <parameters>
+                <definition>primitive://String</definition>
+                <isRequired>true</isRequired>
+                <parameterName>accountId</parameterName>
+                <valueExpression>{!$Input:accountId}</valueExpression>
+            </parameters>
+            <referenceName>Apex:AccountBriefContext</referenceName>
+        </templateDataProviders>
+    </templateVersions>
+    <type>einstein_gpt__flex</type>
+    <visibility>Global</visibility>
+</GenAiPromptTemplate>

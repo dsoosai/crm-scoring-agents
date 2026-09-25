@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Account_Vision__c</fullName>
+    <description>Where the account can be in 12 months and how to get there.</description>
+    <label>Account Vision</label>
+    <length>32768</length>
+    <visibleLines>15</visibleLines>
+    <type>Html</type>
+</CustomField>

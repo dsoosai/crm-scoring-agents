@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Agent_Resolved__c</fullName>
+    <description>Solved in the conversation with a knowledge article.</description>
+    <label>Resolved by Agent</label>
+    <defaultValue>false</defaultValue>
+    <type>Checkbox</type>
+</CustomField>

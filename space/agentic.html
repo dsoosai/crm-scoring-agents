@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agentic Enterprise Demo</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7; --surface-1: #fcfcfb; --text-primary: #0b0b0b; --text-secondary: #52514e; --text-muted: #898781;
+  --grid: #e1e0d9; --border: rgba(11,11,11,0.10);
+  --series-1: #2a78d6; --series-2: #eb6834; --series-3: #1baf7a; --series-4: #8b5cf6; --series-5: #a3a29a;
+  --critical: #d03b3b; --user: #eef3fb; --agent: #f3f2ee;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface-1: #1a1a19; --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #898781;
+    --grid: #2c2c2a; --border: rgba(255,255,255,0.10);
+    --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #a78bfa; --series-5: #6f6e68;
+    --critical: #e25555; --user: #16263d; --agent: #23231f;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--text-primary); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 1120px; margin: 0 auto; padding: 32px 16px 64px; }
+h1 { font-size: 28px; line-height: 1.2; margin: 0 0 6px; font-weight: 650; }
+h2 { font-size: 20px; margin: 40px 0 4px; font-weight: 650; }
+h3 { font-size: 15px; margin: 0 0 8px; font-weight: 600; }
+a { color: var(--series-1); }
+p.lead { color: var(--text-secondary); margin: 0 0 20px; max-width: 780px; }
+.sub, .muted { color: var(--text-secondary); }
+.sub { margin: 0 0 16px; }
+.card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 20px 0 8px; }
+.tile .label { color: var(--text-secondary); font-size: 13px; }
+.tile .value { font-size: 26px; font-weight: 600; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.tile .delta { font-size: 13px; color: var(--text-secondary); }
+svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart { overflow-x: auto; }
+.chart svg { min-width: 640px; }
+.legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; color: var(--text-secondary); margin: 4px 0 8px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { display: inline-block; width: 16px; height: 3px; border-radius: 2px; }
+.wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+th { color: var(--text-secondary); font-weight: 600; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.agents { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
+.agents ul { margin: 6px 0 0; padding-left: 18px; color: var(--text-secondary); font-size: 14px; }
+.tag { display: inline-block; font-size: 12px; color: var(--text-secondary); border: 1px solid var(--border); border-radius: 999px; padding: 1px 8px; margin: 0 4px 6px 0; }
+.flow { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+.flow li { margin: 4px 0; }
+.convo { margin-bottom: 12px; }
+.turn { border-radius: 10px; padding: 8px 12px; margin: 8px 0; max-width: 860px; }
+.turn.user { background: var(--user); margin-left: auto; max-width: 640px; }
+.turn.agent { background: var(--agent); }
+.turn .who { font-size: 12px; color: var(--text-muted); }
+.turn .msg { font-size: 14px; }
+footer { margin-top: 48px; color: var(--text-muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Agentic Enterprise: Agentforce, Claude and Snowflake</h1>
+  <p class="lead">Four agents work one account, Omega Inc. Salesforce Agentforce reasons over CRM data and reads product telemetry live from Snowflake without copying it. Claude writes the briefs, emails and account plans through Prompt Builder and answers analytics questions inside Snowflake as a Cortex agent. The account score comes from the scoring agents on the <a href="index.html">lifecycle dashboard</a>. Fictional data.</p>
+
+  <div class="tiles">
+    <div class="card tile"><div class="label">Trailing 12 months</div><div class="value">63,570</div><div class="delta">credits, +62% year over year</div></div>
+    <div class="card tile"><div class="label">Contract used</div><div class="value">83%</div><div class="delta">49,913 of 60,000 credits, term ends Dec 19</div></div>
+    <div class="card tile"><div class="label">Capacity runs out</div><div class="value">Nov 14</div><div class="delta">35 days early; 112% by term end</div></div>
+    <div class="card tile"><div class="label">AI (Cortex) workload</div><div class="value">+282%</div><div class="delta">last 90 days; Data Science and ML -28%</div></div>
+    <div class="card tile"><div class="label">CRM score</div><div class="value">94.3</div><div class="delta">tier A, champion model account-v12</div></div>
+  </div>
+
+  <h2>The renewal signal</h2>
+  <p class="sub">Cumulative credits this term against the 60,000-credit contract. Dashed: the current run rate of 202 credits a day.</p>
+  <div class="card chart"><svg viewBox="0 0 960 300" role="img" aria-label="Cumulative credits this term against the contract"><line x1="64" x2="936" y1="264.0" y2="264.0" stroke="var(--grid)"/><text x="56" y="268.0" text-anchor="end" font-size="12" fill="var(--text-muted)">0</text><line x1="64" x2="936" y1="214.4" y2="214.4" stroke="var(--grid)"/><text x="56" y="218.4" text-anchor="end" font-size="12" fill="var(--text-muted)">15,000</text><line x1="64" x2="936" y1="164.8" y2="164.8" stroke="var(--grid)"/><text x="56" y="168.8" text-anchor="end" font-size="12" fill="var(--text-muted)">30,000</text><line x1="64" x2="936" y1="115.2" y2="115.2" stroke="var(--grid)"/><text x="56" y="119.2" text-anchor="end" font-size="12" fill="var(--text-muted)">45,000</text><line x1="64" x2="936" y1="65.6" y2="65.6" stroke="var(--grid)"/><text x="56" y="69.6" text-anchor="end" font-size="12" fill="var(--text-muted)">60,000</text><line x1="64" x2="936" y1="16.0" y2="16.0" stroke="var(--grid)"/><text x="56" y="20.0" text-anchor="end" font-size="12" fill="var(--text-muted)">76,000</text><text x="92.7" y="288" text-anchor="middle" font-size="12" fill="var(--text-muted)">Jan</text><text x="167.0" y="288" text-anchor="middle" font-size="12" fill="var(--text-muted)">Feb</text><text x="234.1" y="288" text-anchor="middle" font-size="12" fill="var(--text-muted)">Mar</text><text x="308.4" y="288" text-anchor="middle" font-size="12" fill="var(--text-muted)">Apr</text><text x="380.2" y="288" text-anchor="middle" font-size="12" fill="var(--text-muted)">May</text><text x="454.5" y="288" text-anchor="middle" font-size="12" fill="var(--text-muted)">Jun</text><text x="526.4" y="288" text-anchor="middle" font-size="12" fill="var(--text-muted)">Jul</text><text x="600.6" y="288" text-anchor="middle" font-size="12" fill="var(--text-muted)">Aug</text><text x="674.9" y="288" text-anchor="middle" font-size="12" fill="var(--text-muted)">Sep</text><text x="746.7" y="288" text-anchor="middle" font-size="12" fill="var(--text-muted)">Oct</text><text x="821.0" y="288" text-anchor="middle" font-size="12" fill="var(--text-muted)">Nov</text><text x="892.9" y="288" text-anchor="middle" font-size="12" fill="var(--text-muted)">Dec</text><line x1="64" x2="936" y1="67.2" y2="67.2" stroke="var(--critical)" stroke-dasharray="6 4"/><text x="72" y="61.2" text-anchor="start" font-size="12" fill="var(--critical)">Contract 60,000 credits</text><polyline points="64.0,263.7 66.4,263.4 68.8,262.8 71.2,262.1 73.6,261.6 76.0,261.0 78.4,260.4 80.8,260.0 83.2,259.7 85.6,258.9 88.0,258.1 90.4,257.3 92.7,256.8 95.1,256.2 97.5,255.8 99.9,255.5 102.3,254.9 104.7,254.4 107.1,253.8 109.5,253.2 111.9,252.6 114.3,252.3 116.7,252.0 119.1,251.4 121.5,250.9 123.9,250.2 126.3,249.7 128.7,249.0 131.1,248.7 133.5,248.4 135.9,247.9 138.3,247.3 140.7,246.7 143.1,246.1 145.5,245.5 147.8,245.2 150.2,244.9 152.6,244.2 155.0,243.6 157.4,243.0 159.8,242.2 162.2,241.4 164.6,241.1 167.0,240.7 169.4,240.1 171.8,239.5 174.2,238.9 176.6,238.3 179.0,237.7 181.4,237.4 183.8,237.0 186.2,236.4 188.6,235.8 191.0,235.3 193.4,234.7 195.8,234.0 198.2,233.7 200.5,233.3 202.9,232.7 205.3,232.1 207.7,231.4 210.1,230.9 212.5,230.3 214.9,229.9 217.3,229.6 219.7,229.0 222.1,228.4 224.5,227.8 226.9,227.0 229.3,226.2 231.7,225.8 234.1,225.5 236.5,224.9 238.9,224.3 241.3,223.7 243.7,223.1 246.1,222.5 248.5,222.1 250.9,221.8 253.3,221.2 255.6,220.5 258.0,220.0 260.4,219.3 262.8,218.7 265.2,218.4 267.6,218.0 270.0,217.4 272.4,216.8 274.8,216.2 277.2,215.6 279.6,214.9 282.0,214.6 284.4,214.2 286.8,213.6 289.2,212.9 291.6,212.3 294.0,211.7 296.4,211.1 298.8,210.8 301.2,210.4 303.6,209.5 306.0,208.6 308.4,208.1 310.7,207.4 313.1,206.8 315.5,206.5 317.9,206.1 320.3,205.5 322.7,204.9 325.1,204.3 327.5,203.7 329.9,203.0 332.3,202.7 334.7,202.3 337.1,201.7 339.5,201.1 341.9,200.4 344.3,199.8 346.7,199.1 349.1,198.8 351.5,198.4 353.9,197.8 356.3,197.2 358.7,196.5 361.1,195.8 363.5,195.2 365.8,194.9 368.2,194.5 370.6,193.9 373.0,193.0 375.4,192.2 377.8,191.3 380.2,190.7 382.6,190.4 385.0,190.0 387.4,189.3 389.8,188.7 392.2,188.1 394.6,187.4 397.0,186.8 399.4,186.4 401.8,186.1 404.2,185.4 406.6,184.8 409.0,184.2 411.4,183.5 413.8,182.9 416.2,182.5 418.5,182.1 420.9,181.5 423.3,180.8 425.7,180.1 428.1,179.5 430.5,178.8 432.9,178.5 435.3,178.1 437.7,177.4 440.1,176.8 442.5,176.1 444.9,175.4 447.3,174.6 449.7,174.2 452.1,173.8 454.5,173.2 456.9,172.5 459.3,171.8 461.7,171.2 464.1,170.5 466.5,170.1 468.9,169.7 471.3,169.1 473.6,168.4 476.0,167.8 478.4,167.1 480.8,166.4 483.2,166.1 485.6,165.7 488.0,165.0 490.4,164.4 492.8,163.7 495.2,163.0 497.6,162.3 500.0,161.9 502.4,161.5 504.8,160.9 507.2,160.2 509.6,159.6 512.0,159.0 514.4,158.3 516.8,157.9 519.2,157.5 521.6,156.6 524.0,155.7 526.4,155.0 528.7,154.3 531.1,153.7 533.5,153.3 535.9,152.9 538.3,152.3 540.7,151.6 543.1,151.0 545.5,150.3 547.9,149.6 550.3,149.2 552.7,148.9 555.1,148.2 557.5,147.5 559.9,146.8 562.3,146.1 564.7,145.4 567.1,145.0 569.5,144.5 571.9,143.8 574.3,143.1 576.7,142.4 579.1,141.6 581.5,140.9 583.8,140.5 586.2,140.1 588.6,139.3 591.0,138.6 593.4,137.7 595.8,136.8 598.2,135.8 600.6,135.4 603.0,134.9 605.4,134.2 607.8,133.5 610.2,132.8 612.6,132.1 615.0,131.4 617.4,131.0 619.8,130.6 622.2,129.9 624.6,129.1 627.0,128.4 629.4,127.7 631.8,126.9 634.2,126.5 636.5,126.0 638.9,125.3 641.3,124.6 643.7,123.9 646.1,123.2 648.5,122.5 650.9,122.0 653.3,121.6 655.7,120.9 658.1,120.1 660.5,119.4 662.9,118.7 665.3,118.0 667.7,117.5 670.1,117.1 672.5,116.2 674.9,115.4 677.3,114.7 679.7,113.9 682.1,113.2 684.5,112.7 686.9,112.3 689.3,111.5 691.6,110.8 694.0,110.1 696.4,109.4 698.8,108.7 701.2,108.3 703.6,107.8 706.0,107.1 708.4,106.4 710.8,105.7 713.2,104.9 715.6,104.2 718.0,103.8 720.4,103.3 722.8,102.5 725.2,101.8 727.6,101.0 730.0,100.3" fill="none" stroke="var(--series-1)" stroke-width="2.5"/><line x1="730.0" y1="100.3" x2="936.0" y2="43.4" stroke="var(--series-1)" stroke-width="2" stroke-dasharray="4 4"/><circle cx="852.2" cy="67.2" r="5" fill="var(--critical)"/><text x="842.2" y="57.2" text-anchor="end" font-size="12" fill="var(--text-primary)">Runs out about Nov 14</text><circle cx="730.0" cy="100.3" r="4" fill="var(--series-1)"/><text x="722.0" y="90.3" text-anchor="end" font-size="12" fill="var(--text-secondary)">Today 49,913</text></svg></div>
+
+  <h2>What is growing and what is not</h2>
+  <p class="sub">Monthly credits by workload. AI is taking off. Data Science and ML is falling while the ML team evaluates another platform.</p>
+  <div class="card"><div class="legend"><span><i style="background:var(--series-1)"></i>Data Engineering</span><span><i style="background:var(--series-2)"></i>BI &amp; Analytics</span><span><i style="background:var(--series-3)"></i>AI (Cortex)</span><span><i style="background:var(--series-4)"></i>Data Science &amp; ML</span><span><i style="background:var(--series-5)"></i>Data Sharing &amp; Apps</span></div><div class="chart"><svg viewBox="0 0 960 300" role="img" aria-label="Monthly credits by workload"><line x1="56" x2="936" y1="264.0" y2="264.0" stroke="var(--grid)"/><text x="48" y="268.0" text-anchor="end" font-size="12" fill="var(--text-muted)">0</text><line x1="56" x2="936" y1="202.0" y2="202.0" stroke="var(--grid)"/><text x="48" y="206.0" text-anchor="end" font-size="12" fill="var(--text-muted)">900</text><line x1="56" x2="936" y1="140.0" y2="140.0" stroke="var(--grid)"/><text x="48" y="144.0" text-anchor="end" font-size="12" fill="var(--text-muted)">1,800</text><line x1="56" x2="936" y1="78.0" y2="78.0" stroke="var(--grid)"/><text x="48" y="82.0" text-anchor="end" font-size="12" fill="var(--text-muted)">2,600</text><line x1="56" x2="936" y1="16.0" y2="16.0" stroke="var(--grid)"/><text x="48" y="20.0" text-anchor="end" font-size="12" fill="var(--text-muted)">3,500</text><text x="56.0" y="288" text-anchor="middle" font-size="12" fill="var(--text-muted)">Jan 25</text><text x="194.9" y="288" text-anchor="middle" font-size="12" fill="var(--text-muted)">Apr 25</text><text x="333.9" y="288" text-anchor="middle" font-size="12" fill="var(--text-muted)">Jul 25</text><text x="472.8" y="288" text-anchor="middle" font-size="12" fill="var(--text-muted)">Oct 25</text><text x="611.8" y="288" text-anchor="middle" font-size="12" fill="var(--text-muted)">Jan 26</text><text x="750.7" y="288" text-anchor="middle" font-size="12" fill="var(--text-muted)">Apr 26</text><text x="889.7" y="288" text-anchor="middle" font-size="12" fill="var(--text-muted)">Jul 26</text><text x="936.0" y="288" text-anchor="middle" font-size="12" fill="var(--text-muted)">Aug 26</text><polyline points="56.0,96.7 102.3,110.0 148.6,92.3 194.9,96.5 241.3,89.7 287.6,91.9 333.9,82.6 380.2,84.4 426.5,78.1 472.8,68.1 519.2,83.2 565.5,62.6 611.8,66.6 658.1,78.8 704.4,55.3 750.7,60.3 797.1,48.5 843.4,52.2 889.7,38.5 936.0,43.9" fill="none" stroke="var(--series-1)" stroke-width="2"/><polyline points="56.0,167.0 102.3,178.3 148.6,179.6 194.9,166.0 241.3,169.1 287.6,175.9 333.9,161.5 380.2,172.8 426.5,168.2 472.8,159.4 519.2,173.2 565.5,155.4 611.8,163.5 658.1,168.7 704.4,158.8 750.7,154.6 797.1,167.3 843.4,157.1 889.7,149.9 936.0,163.1" fill="none" stroke="var(--series-2)" stroke-width="2"/><polyline points="56.0,264.0 102.3,264.0 148.6,264.0 194.9,264.0 241.3,264.0 287.6,264.0 333.9,264.0 380.2,264.0 426.5,264.0 472.8,264.0 519.2,264.0 565.5,264.0 611.8,264.0 658.1,264.0 704.4,260.4 750.7,255.6 797.1,250.2 843.4,238.5 889.7,219.9 936.0,201.9" fill="none" stroke="var(--series-3)" stroke-width="2"/><polyline points="56.0,226.4 102.3,228.6 148.6,226.1 194.9,227.0 241.3,226.0 287.6,226.6 333.9,224.7 380.2,225.6 426.5,225.9 472.8,224.1 519.2,226.8 565.5,224.1 611.8,224.9 658.1,227.8 704.4,223.7 750.7,224.4 797.1,225.7 843.4,230.5 889.7,232.5 936.0,237.5" fill="none" stroke="var(--series-4)" stroke-width="2"/><polyline points="56.0,253.1 102.3,254.1 148.6,253.4 194.9,253.5 241.3,252.9 287.6,253.4 333.9,253.4 380.2,253.1 426.5,253.4 472.8,253.1 519.2,253.4 565.5,252.9 611.8,252.8 658.1,253.8 704.4,252.8 750.7,253.1 797.1,252.8 843.4,253.1 889.7,252.9 936.0,252.9" fill="none" stroke="var(--series-5)" stroke-width="2"/></svg></div></div>
+
+  <h2>What to sell next</h2>
+  <p class="sub">Use cases that technology peers run live and Omega does not, from <code>V_USE_CASE_RECOMMENDATIONS</code> in Snowflake. Case studies are found with Cortex Search.</p>
+  <div class="card wrap"><table>
+    <thead><tr><th class="num">#</th><th>Use case</th><th class="num">Peers live</th><th>Peers</th><th class="num">Credits a year</th><th class="num">Weeks to value</th><th>Case study</th></tr></thead>
+    <tbody><tr><td class="num">1</td><td><b>Predictive Lead and Account Scoring</b><br><span class="muted">Pipeline conversion up 12 to 20 percent; reps work the right accounts first</span></td><td class="num">4</td><td>Helix Software, Northwind Analytics, Pinecrest Labs, Quanta Systems</td><td class="num">9,100</td><td class="num">6</td><td>Pinecrest Labs scores leads and flags churn with a two-person team</td></tr><tr><td class="num">2</td><td><b>Revenue Forecasting and Pipeline Analytics</b><br><span class="muted">Forecast error down about 30 percent; one number for sales and finance</span></td><td class="num">2</td><td>Northwind Analytics, Quanta Systems</td><td class="num">7,900</td><td class="num">8</td><td>Quanta Systems gets one forecast for sales and finance</td></tr><tr><td class="num">3</td><td><b>Customer Churn and Expansion Prediction</b><br><span class="muted">Gross retention up 2 to 4 points; earlier save plays</span></td><td class="num">2</td><td>Helix Software, Pinecrest Labs</td><td class="num">6,800</td><td class="num">8</td><td>Summit Insurance lowers policy lapse with churn prediction</td></tr></tbody>
+  </table></div>
+
+  <h2>The four agents</h2>
+  <div class="agents">
+    <div class="card"><h3>Sales Strategy Assistant</h3><span class="tag">Agentforce employee agent</span><span class="tag">Agent Script</span>
+      <ul><li>Briefs the rep with a Claude-written summary grounded in CRM and live telemetry</li><li>Reads consumption through the Snowflake SQL API</li><li>Asks Snowflake's Cortex agent ad hoc questions</li><li>Recommends use cases with peer proof</li><li>Drafts outreach; the rep sends</li><li>Routes pricing to Deal Desk, never quotes it</li></ul></div>
+    <div class="card"><h3>Account Plan Autofill</h3><span class="tag">Record-triggered flow</span><span class="tag">Prompt Builder</span>
+      <ul><li>One click creates the plan</li><li>Grounds it in Snowflake once, saves the exact data used</li><li>Claude drafts trends, use cases, landscape, SWOT and vision</li><li>Fills in section by section, then notifies the owner</li></ul></div>
+    <div class="card"><h3>Support Intake Agent</h3><span class="tag">Agentforce service agent</span><span class="tag">Cortex Search</span>
+      <ul><li>Verifies the customer by email</li><li>Answers only from knowledge articles in Snowflake</li><li>Opens routed cases: tier A plus high severity goes to Tier 2</li><li>Sends pricing questions to the account team</li></ul></div>
+    <div class="card"><h3>Observability and audit</h3><span class="tag">Agent Audit Log</span><span class="tag">Snowflake query history</span>
+      <ul><li>Every action logged with source, latency and guardrail</li><li>Snowflake query Ids tie each answer to the exact read</li><li>Fallbacks to cached data are labelled</li><li>Feedback captured in the same table</li></ul></div>
+  </div>
+
+  <h2>How it fits together</h2>
+  <div class="flow">
+    <div class="card"><h3>Salesforce</h3><ul><li>Agent Script agents and Apex actions</li><li>Prompt Builder templates on Claude, through the Einstein Trust Layer</li><li>Named credential with a Snowflake programmatic access token</li><li>Custom objects: Account Plan, Consumption Snapshot, Agent Audit Log</li></ul></div>
+    <div class="card"><h3>Snowflake</h3><ul><li>Telemetry, contracts and peer adoption tables</li><li>Views the agents read, as a read-only service user</li><li>Cortex Search over case studies and the support KB</li><li>Semantic view and a Cortex agent on claude-sonnet-4-6</li><li>Cortex Code (CoCo) for analysts in Snowsight</li></ul></div>
+    <div class="card"><h3>Hugging Face</h3><ul><li>The scoring agents' lifecycle dashboard</li><li>The champion account model behind Omega's tier A</li><li>This page and the <a href="https://huggingface.co/datasets/dsoosai/agentic-enterprise-demo">demo dataset</a></li></ul></div>
+  </div>
+
+  <h2>Conversations</h2>
+  <p class="sub">Conversation captures from the live org go here after the next run.</p>
+
+  <footer>Telemetry as of Sep 24, 2026. Fictional data. Source: <a href="https://github.com/dsoosai/crm-scoring-agents">github.com/dsoosai/crm-scoring-agents</a> (agentforce/ and snowflake/agentic/).</footer>
+</main>
+</body>
+</html>

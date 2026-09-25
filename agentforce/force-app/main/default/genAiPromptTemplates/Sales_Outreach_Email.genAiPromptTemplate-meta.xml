@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiPromptTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Personalized outreach email to a contact at an account, grounded in meeting notes, telemetry and peer case studies from Snowflake.</description>
+    <developerName>Sales_Outreach_Email</developerName>
+    <masterLabel>Sales Outreach Email</masterLabel>
+    <templateVersions>
+        <content>You write outreach emails for {!$User.FirstName} {!$User.LastName}, an account executive at {!$Organization.Name}. Draft one email to the recipient below. The account executive will review it and send it themselves.
+
+&lt;data&gt;
+{!$Apex:OutreachContext.Prompt}
+&lt;/data&gt;
+
+Rules:
+- First line: Subject: followed by a subject of at most eight words.
+- Greet the recipient by first name. 120 to 170 words in the body.
+- Open with one specific point from the most recent meeting notes that matters to this person's role.
+- Lead with the focus the account executive asked for. If none, lead with the top recommended use case.
+- Give one proof point from a peer case study: the peer company and its measured result.
+- You may describe the customer's own usage trends in general words, such as AI workloads growing quickly. Never state credit counts, prices, discounts, contract terms or other customers' private data beyond the case study.
+- End with one clear ask: a 30-minute working session. Include the sender's scheduling link if there is one.
+- Sign off with the sender's first name.
+- Write plain business English in short sentences. Do not use em dashes. Use only facts in the data. If something is not in the data, say it is unknown. Never invent numbers, names, dates or quotes. No buzzwords such as synergy, leverage, unlock or game-changer.</content>
+        <inputs>
+            <apiName>accountId</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>accountId</masterLabel>
+            <referenceName>Input:accountId</referenceName>
+            <required>true</required>
+        </inputs>
+        <inputs>
+            <apiName>contactName</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>contactName</masterLabel>
+            <referenceName>Input:contactName</referenceName>
+            <required>true</required>
+        </inputs>
+        <inputs>
+            <apiName>focus</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>focus</masterLabel>
+            <referenceName>Input:focus</referenceName>
+            <required>false</required>
+        </inputs>
+        <primaryModel>sfdc_ai__DefaultBedrockAnthropicClaude45Sonnet</primaryModel>
+        <status>Published</status>
+        <templateDataProviders>
+            <definition>apex://OutreachContext</definition>
+            <parameters>
+                <definition>primitive://String</definition>
+                <isRequired>true</isRequired>
+                <parameterName>accountId</parameterName>
+                <valueExpression>{!$Input:accountId}</valueExpression>
+            </parameters>
+            <parameters>
+                <definition>primitive://String</definition>
+                <isRequired>true</isRequired>
+                <parameterName>contactName</parameterName>
+                <valueExpression>{!$Input:contactName}</valueExpression>
+            </parameters>
+            <parameters>
+                <definition>primitive://String</definition>
+                <isRequired>false</isRequired>
+                <parameterName>focus</parameterName>
+                <valueExpression>{!$Input:focus}</valueExpression>
+            </parameters>
+            <referenceName>Apex:OutreachContext</referenceName>
+        </templateDataProviders>
+    </templateVersions>
+    <type>einstein_gpt__flex</type>
+    <visibility>Global</visibility>
+</GenAiPromptTemplate>

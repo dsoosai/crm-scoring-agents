@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionCalls>
+        <name>Ground_and_Draft_Plan</name>
+        <label>Ground and Draft Plan</label>
+        <locationX>176</locationX>
+        <locationY>323</locationY>
+        <actionName>AccountPlanGenerator</actionName>
+        <actionType>apex</actionType>
+        <inputParameters>
+            <name>planId</name>
+            <value>
+                <elementReference>$Record.Id</elementReference>
+            </value>
+        </inputParameters>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </actionCalls>
+    <apiVersion>66.0</apiVersion>
+    <description>When an account plan is created or set to Queued, ground it in live Snowflake telemetry and draft every section with Prompt Builder templates on Claude. Drafting runs in chained background jobs so the page fills in section by section.</description>
+    <environments>Default</environments>
+    <interviewLabel>Account Plan Autofill {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>Account Plan Autofill</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>OriginBuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>AutoLaunchedFlow</processType>
+    <start>
+        <locationX>50</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Ground_and_Draft_Plan</targetReference>
+        </connector>
+        <doesRequireRecordChangedToMeetCriteria>true</doesRequireRecordChangedToMeetCriteria>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Status__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <stringValue>Queued</stringValue>
+            </value>
+        </filters>
+        <object>Account_Plan__c</object>
+        <recordTriggerType>CreateAndUpdate</recordTriggerType>
+        <triggerType>RecordAfterSave</triggerType>
+    </start>
+    <status>Active</status>
+</Flow>

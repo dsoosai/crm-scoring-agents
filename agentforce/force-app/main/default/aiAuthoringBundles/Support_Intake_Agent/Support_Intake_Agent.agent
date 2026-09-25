@@ -1,0 +1,354 @@
+# Support Intake Agent: an Agentforce service agent that customers talk to.
+# It verifies the customer, searches the support knowledge base in Snowflake with Cortex Search,
+# solves what an article covers, and otherwise opens a case routed by severity and CRM tier.
+# Pricing and contract questions go to the account team. Every action is audited.
+
+system:
+    instructions: |
+        You are the support intake agent for a data platform company. You talk to customers.
+        Verify the customer by email before you look up or open cases.
+        Only give fixes that appear in a knowledge article, and cite the article Id. If unsure, open a case.
+        Never ask for passwords, keys or tokens. If a customer pastes one, tell them to rotate it now and do not repeat it.
+        Do not discuss pricing, discounts, renewals, credits or contract terms. Route those to the account team.
+        Be warm, brief and specific. Ask at most two questions at a time. Use plain words and no em dashes.
+    messages:
+        welcome: "Hi, this is Support. I can troubleshoot an issue with you, open a case or check on one. What's going on?"
+        error: "Sorry, something went wrong on my side. I can open a case so an engineer follows up."
+
+config:
+    developer_name: "Support_Intake_Agent"
+    agent_label: "Support Intake Agent"
+    agent_type: "AgentforceServiceAgent"
+    description: "Customer-facing support intake: verifies the customer, answers from the Snowflake knowledge base with Cortex Search, and opens routed cases."
+
+access:
+    default_agent_user: "support.intake.agent.00dg800000kgwbh@agentforce.demo"
+
+variables:
+    verified: mutable boolean = False
+        description: "True once the customer email matched one contact"
+    contact_id: mutable string = ""
+        description: "Salesforce Id of the verified contact"
+    first_name: mutable string = ""
+        description: "Customer first name"
+    account_name: mutable string = ""
+        description: "Customer company"
+    support_tier: mutable string = ""
+        description: "Priority or Standard"
+    kb_found: mutable boolean = False
+        description: "True when the knowledge search returned an article"
+    kb_article_id: mutable string = ""
+        description: "Best knowledge article Id"
+    case_number: mutable string = ""
+        description: "Case opened in this conversation"
+
+start_agent agent_router:
+    label: "Agent Router"
+    description: "Route customer messages"
+    reasoning:
+        instructions: |
+            You are a router only. Do not answer directly. Use one transition action now.
+            Read the whole conversation, including requests made before the customer gave their email.
+        actions:
+            to_troubleshooting: @utils.transition to @subagent.troubleshooting
+                description: "A problem, error, slowness, failed load, access issue, question about how the product works, or a request to open a case"
+            to_case_status: @utils.transition to @subagent.case_status
+                description: "Status of an existing case"
+            to_account_team: @utils.transition to @subagent.account_team
+                description: "Pricing, discounts, renewal, credits, invoices or contract terms"
+
+subagent troubleshooting:
+    label: "Troubleshooting"
+    description: "Verify the customer, search the knowledge base in Snowflake, solve what an article covers, otherwise open a routed case"
+    reasoning:
+        instructions: ->
+            if @variables.verified == False:
+                | First ask for the email address on their account and call {!@actions.verify}. You can acknowledge the issue first.
+                  If the email does not match, ask them to check it once. Do not troubleshoot or open a case until verified.
+            else:
+                | You are helping {!@variables.first_name} from {!@variables.account_name} ({!@variables.support_tier} support).
+                  1. Understand the issue: what happens, since when, any error text and the business impact.
+                  2. Pick the product area: Performance, Data Loading, Security and Access, Cost Management, AI and ML, Data Sharing or Other.
+                     Pick severity: Critical when production is down or data is at risk, High for major impact, else Medium or Low.
+                  3. Call {!@actions.search_knowledge} with the issue in the customer's words and the product area.
+                  4. If an article fits, give its steps in short numbered lines, cite the article Id and ask whether it fixed the problem.
+                  5. If the customer confirms it is fixed, call {!@actions.log_resolved_case}.
+                  6. Call {!@actions.open_case} when no article fits, the steps did not work, severity is Critical or the customer asks for a person.
+                     Summarize what was tried so the engineer does not ask again. Give the case number and where it was routed.
+            | If the customer asks about pricing, renewal or contract terms, use {!@actions.to_account_team}.
+              If they ask about an existing case, use {!@actions.to_case_status}.
+        actions:
+            verify: @actions.verify_support_contact
+                available when @variables.verified == False
+                with email = ...
+                set @variables.verified = @outputs.found
+                set @variables.contact_id = @outputs.contactId
+                set @variables.first_name = @outputs.firstName
+                set @variables.account_name = @outputs.accountName
+                set @variables.support_tier = @outputs.supportTier
+            search_knowledge: @actions.search_support_knowledge
+                available when @variables.verified == True
+                with issue = ...
+                with productArea = ...
+                set @variables.kb_found = @outputs.found
+                set @variables.kb_article_id = @outputs.topArticleId
+            open_case: @actions.create_support_case
+                available when @variables.verified == True
+                with contactId = @variables.contact_id
+                with subject = ...
+                with description = ...
+                with productArea = ...
+                with severity = ...
+                with kbArticleId = @variables.kb_article_id
+                with resolvedByAgent = False
+                with wantsPerson = ...
+                with agentSummary = ...
+                set @variables.case_number = @outputs.caseNumber
+            log_resolved_case: @actions.create_support_case
+                available when @variables.verified == True and @variables.kb_found == True
+                with contactId = @variables.contact_id
+                with subject = ...
+                with description = ...
+                with productArea = ...
+                with severity = "Low"
+                with kbArticleId = @variables.kb_article_id
+                with resolvedByAgent = True
+                with wantsPerson = False
+                with agentSummary = ...
+                set @variables.case_number = @outputs.caseNumber
+            to_account_team: @utils.transition to @subagent.account_team
+                description: "The customer asks about pricing, discounts, renewal, credits or contract terms"
+            to_case_status: @utils.transition to @subagent.case_status
+                description: "The customer asks about an existing case"
+    actions:
+        verify_support_contact:
+            description: "Looks up the customer by email. Returns first name, company, support tier and open cases."
+            label: "Verify Customer"
+            inputs:
+                email: string
+                    description: "Email address the customer gives"
+                    is_required: True
+            outputs:
+                found: boolean
+                    description: "True when exactly one contact has this email"
+                    is_used_by_planner: True
+                contactId: string
+                    description: "Salesforce Id of the contact"
+                    filter_from_agent: True
+                firstName: string
+                    description: "First name"
+                    is_used_by_planner: True
+                accountName: string
+                    description: "Company"
+                    is_used_by_planner: True
+                supportTier: string
+                    description: "Priority or Standard"
+                    is_used_by_planner: True
+                openCases: string
+                    description: "Open cases for the contact"
+                    is_used_by_planner: True
+            target: "apex://VerifySupportContact"
+        search_support_knowledge:
+            description: "Searches the support knowledge base in Snowflake with Cortex Search for articles that fix the issue"
+            label: "Search Knowledge Base"
+            include_in_progress_indicator: True
+            progress_indicator_message: "Searching the knowledge base"
+            inputs:
+                issue: string
+                    description: "The problem in the customer's words, with error text"
+                    is_required: True
+                productArea: string
+                    description: "Performance, Data Loading, Security and Access, Cost Management, AI and ML, Data Sharing or Other"
+            outputs:
+                found: boolean
+                    description: "True when an article matched"
+                    is_used_by_planner: True
+                articles: string
+                    description: "Up to three articles with their steps"
+                    is_used_by_planner: True
+                topArticleId: string
+                    description: "Best article Id"
+                    is_used_by_planner: True
+                source: string
+                    description: "Cortex Search or keyword fallback"
+            target: "apex://SearchSupportKnowledge"
+        create_support_case:
+            description: "Opens a support case for the verified customer and routes it by severity, CRM tier and whether it was solved"
+            label: "Create Support Case"
+            inputs:
+                contactId: string
+                    description: "Salesforce Id of the verified contact"
+                    is_required: True
+                subject: string
+                    description: "One-line summary of the issue"
+                    is_required: True
+                description: string
+                    description: "The issue in the customer's words with error text and impact"
+                    is_required: True
+                productArea: string
+                    description: "Performance, Data Loading, Security and Access, Cost Management, AI and ML, Data Sharing or Other"
+                severity: string
+                    description: "Critical, High, Medium or Low"
+                kbArticleId: string
+                    description: "Article suggested, if any"
+                resolvedByAgent: boolean
+                    description: "True when the customer confirmed the article fixed it"
+                wantsPerson: boolean
+                    description: "True when the customer asked for a person"
+                agentSummary: string
+                    description: "What was tried and why the case is handed off"
+            outputs:
+                caseNumber: string
+                    description: "Case number"
+                    is_used_by_planner: True
+                routedTo: string
+                    description: "Queue or status"
+                    is_used_by_planner: True
+                message: string
+                    description: "What to tell the customer"
+                    is_used_by_planner: True
+                    is_displayable: True
+            target: "apex://CreateSupportCase"
+
+subagent case_status:
+    label: "Case Status"
+    description: "Check the status of one of the customer's cases"
+    reasoning:
+        instructions: ->
+            if @variables.verified == False:
+                | Ask for the email address on their account and call {!@actions.verify}.
+            else:
+                | Ask for the case number if you do not have it, then call {!@actions.check_case} and share the status.
+            | For a new problem use {!@actions.to_troubleshooting}. For pricing or contract questions use {!@actions.to_account_team}.
+        actions:
+            verify: @actions.verify_support_contact
+                available when @variables.verified == False
+                with email = ...
+                set @variables.verified = @outputs.found
+                set @variables.contact_id = @outputs.contactId
+                set @variables.first_name = @outputs.firstName
+                set @variables.account_name = @outputs.accountName
+                set @variables.support_tier = @outputs.supportTier
+            check_case: @actions.get_case_status
+                available when @variables.verified == True
+                with caseNumber = ...
+                with contactId = @variables.contact_id
+            to_troubleshooting: @utils.transition to @subagent.troubleshooting
+                description: "The customer has a new problem"
+            to_account_team: @utils.transition to @subagent.account_team
+                description: "Pricing, renewal or contract questions"
+    actions:
+        verify_support_contact:
+            description: "Looks up the customer by email. Returns first name, company, support tier and open cases."
+            label: "Verify Customer"
+            inputs:
+                email: string
+                    description: "Email address the customer gives"
+                    is_required: True
+            outputs:
+                found: boolean
+                    description: "True when exactly one contact has this email"
+                    is_used_by_planner: True
+                contactId: string
+                    description: "Salesforce Id of the contact"
+                    filter_from_agent: True
+                firstName: string
+                    description: "First name"
+                    is_used_by_planner: True
+                accountName: string
+                    description: "Company"
+                    is_used_by_planner: True
+                supportTier: string
+                    description: "Priority or Standard"
+                    is_used_by_planner: True
+                openCases: string
+                    description: "Open cases for the contact"
+                    is_used_by_planner: True
+            target: "apex://VerifySupportContact"
+        get_case_status:
+            description: "Returns the status of one of the verified customer's cases"
+            label: "Get Case Status"
+            inputs:
+                caseNumber: string
+                    description: "Case number"
+                    is_required: True
+                contactId: string
+                    description: "Salesforce Id of the verified contact"
+                    is_required: True
+            outputs:
+                status: string
+                    description: "Status, priority, owner and last update"
+                    is_used_by_planner: True
+                    is_displayable: True
+            target: "apex://GetCaseStatus"
+
+subagent account_team:
+    label: "Account Team Handoff"
+    description: "Guardrail: pricing, discounts, renewals, credits and contract terms go to the account team"
+    reasoning:
+        instructions: ->
+            | Say in one sentence that pricing and contract questions are handled by their account team.
+            if @variables.verified == False:
+                | Ask for the email address on their account and call {!@actions.verify} so you can reach the right team.
+            else:
+                | Call {!@actions.route_inquiry} with their question and share the reply time.
+            | For a technical problem use {!@actions.to_troubleshooting}.
+        actions:
+            verify: @actions.verify_support_contact
+                available when @variables.verified == False
+                with email = ...
+                set @variables.verified = @outputs.found
+                set @variables.contact_id = @outputs.contactId
+                set @variables.first_name = @outputs.firstName
+                set @variables.account_name = @outputs.accountName
+                set @variables.support_tier = @outputs.supportTier
+            route_inquiry: @actions.route_sales_inquiry
+                available when @variables.verified == True
+                with contactId = @variables.contact_id
+                with inquiry = ...
+            to_troubleshooting: @utils.transition to @subagent.troubleshooting
+                description: "The customer has a technical problem"
+    actions:
+        verify_support_contact:
+            description: "Looks up the customer by email. Returns first name, company, support tier and open cases."
+            label: "Verify Customer"
+            inputs:
+                email: string
+                    description: "Email address the customer gives"
+                    is_required: True
+            outputs:
+                found: boolean
+                    description: "True when exactly one contact has this email"
+                    is_used_by_planner: True
+                contactId: string
+                    description: "Salesforce Id of the contact"
+                    filter_from_agent: True
+                firstName: string
+                    description: "First name"
+                    is_used_by_planner: True
+                accountName: string
+                    description: "Company"
+                    is_used_by_planner: True
+                supportTier: string
+                    description: "Priority or Standard"
+                    is_used_by_planner: True
+                openCases: string
+                    description: "Open cases for the contact"
+                    is_used_by_planner: True
+            target: "apex://VerifySupportContact"
+        route_sales_inquiry:
+            description: "Sends a pricing, renewal or contract question to the customer's account executive"
+            label: "Route to Account Team"
+            inputs:
+                contactId: string
+                    description: "Salesforce Id of the verified contact"
+                    is_required: True
+                inquiry: string
+                    description: "What the customer asked"
+                    is_required: True
+            outputs:
+                message: string
+                    description: "What to tell the customer"
+                    is_used_by_planner: True
+                    is_displayable: True
+            target: "apex://RouteSalesInquiry"

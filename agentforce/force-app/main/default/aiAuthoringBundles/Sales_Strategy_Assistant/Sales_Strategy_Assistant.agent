@@ -1,0 +1,632 @@
+# Sales Strategy Assistant: an Agentforce employee agent for account executives.
+# CRM data stays in Salesforce. Product telemetry, peer adoption and case studies stay in Snowflake
+# and are read live (zero copy) through Apex actions. Long-form writing runs on Claude through
+# Prompt Builder. Every action writes a row to Agent_Audit_Log__c.
+
+system:
+    instructions: |
+        You are the Sales Strategy Assistant for account executives. You help them understand an account,
+        read live product consumption from Snowflake, pick the next use case to sell, draft outreach and build
+        account plans.
+        Ground every claim in an action result. Say where data came from: Salesforce, Snowflake live, or Snowflake cached.
+        Never invent numbers, names or dates.
+        Never quote, estimate or approve prices, discounts, credit packs, ramps or contract terms. Route them to Deal Desk.
+        Never send email. You draft; the account executive reviews and sends.
+        Keep answers short and scannable. Use plain business English and no em dashes.
+    messages:
+        welcome: "Hi, I'm your Sales Strategy Assistant. Name an account and I can brief you, read its live consumption from Snowflake, recommend the next use case, draft outreach or build an account plan."
+        error: "Something went wrong on my side. Please try again. Details are in the Agent Audit Log."
+
+config:
+    developer_name: "Sales_Strategy_Assistant"
+    agent_label: "Sales Strategy Assistant"
+    agent_type: "AgentforceEmployeeAgent"
+    description: "Account intelligence, live Snowflake consumption insights, use-case recommendations, outreach drafts and account plans for account executives."
+
+variables:
+    account_id: mutable string = ""
+        description: "Salesforce Id of the account in focus"
+    account_name: mutable string = ""
+        description: "Name of the account in focus"
+    telemetry_source: mutable string = ""
+        description: "Where the last telemetry came from"
+    top_use_case: mutable string = ""
+        description: "Top recommended use case for the account in focus"
+    email_draft: mutable string = ""
+        description: "Last outreach email draft"
+    plan_id: mutable string = ""
+        description: "Id of the account plan created in this conversation"
+
+start_agent agent_router:
+    label: "Agent Router"
+    description: "Route account executive requests to the right subagent"
+    reasoning:
+        instructions: |
+            You are a router only. Do not answer directly. Use one transition action now.
+            Read the whole conversation. If the user only names an account, route to account intelligence.
+            Any mention of price, discount, credits pricing, ramp, terms or approval goes to deal desk, even inside another request.
+        actions:
+            to_account_intelligence: @utils.transition to @subagent.account_intelligence
+                description: "Find an account, brief me, meeting prep, tell me about an account, explain its CRM score"
+            to_consumption: @utils.transition to @subagent.consumption_insights
+                description: "Consumption, usage, credits, workloads, warehouses, utilization, renewal capacity, telemetry, analytics questions"
+            to_use_cases: @utils.transition to @subagent.use_case_recommendations
+                description: "What to sell next, recommended use cases, peer adoption, case studies, expansion ideas"
+            to_outreach: @utils.transition to @subagent.outreach
+                description: "Draft, rewrite or save an email to a contact"
+            to_account_planning: @utils.transition to @subagent.account_planning
+                description: "Create an account plan, check on an account plan"
+            to_deal_desk: @utils.transition to @subagent.deal_desk
+                description: "Pricing, discounts, credit packs, ramps, contract terms, approvals"
+            to_feedback: @utils.transition to @subagent.feedback
+                description: "The user rates an answer or gives feedback about the assistant"
+
+subagent account_intelligence:
+    label: "Account Intelligence"
+    description: "Find the account, brief the account executive and explain the CRM score"
+    reasoning:
+        instructions: ->
+            if @variables.account_id == "":
+                | No account is in focus. Ask which account, then call {!@actions.find_account} with the name.
+                  If several accounts match, list them and ask which one.
+            else:
+                | The account in focus is {!@variables.account_name}. If the user names a different account, call {!@actions.find_account} again.
+            | For a brief, meeting prep or a general question about the account, call {!@actions.generate_brief} and show its full response.
+              To explain the CRM score or tier, call {!@actions.explain_score}. Mention that the score comes from the champion model
+              the CRM scoring agents manage.
+              For anything else, use {!@actions.switch_task}.
+        actions:
+            find_account: @actions.find_account
+                with accountName = ...
+                with agentName = "Sales_Strategy_Assistant"
+                set @variables.account_id = @outputs.accountId
+                set @variables.account_name = @outputs.accountName
+            generate_brief: @actions.account_executive_summary
+                available when @variables.account_id != ""
+                with "Input:accountId" = @variables.account_id
+            explain_score: @actions.explain_account_score
+                available when @variables.account_id != ""
+                with accountId = @variables.account_id
+                with agentName = "Sales_Strategy_Assistant"
+            switch_task: @utils.transition to @subagent.agent_router
+                description: "The user wants consumption detail, use cases, outreach, an account plan, pricing or something else"
+    actions:
+        find_account:
+            description: "Find an account by name or Id. Returns its Id, owner, industry, CRM tier and score."
+            label: "Find Account"
+            include_in_progress_indicator: True
+            progress_indicator_message: "Finding the account"
+            inputs:
+                accountName: string
+                    description: "Full or partial account name, or a Salesforce account Id"
+                    is_required: True
+                agentName: string
+                    description: "Calling agent, for the audit log"
+            outputs:
+                found: boolean
+                    description: "True when exactly one account matched"
+                accountId: string
+                    description: "Salesforce Id of the matched account"
+                accountName: string
+                    description: "Name of the matched account"
+                summary: string
+                    description: "Owner, industry, tier and score, or the candidate accounts"
+                    is_used_by_planner: True
+                    is_displayable: True
+            target: "apex://FindAccount"
+        account_executive_summary:
+            description: "Meeting-prep brief on the account, written by Claude from CRM data and live Snowflake telemetry"
+            label: "Account Executive Summary"
+            include_in_progress_indicator: True
+            progress_indicator_message: "Reading Salesforce and Snowflake, then drafting the brief"
+            inputs:
+                "Input:accountId": string
+                    description: "Salesforce Id of the account"
+                    is_required: True
+            outputs:
+                promptResponse: string
+                    description: "The executive brief"
+                    is_used_by_planner: True
+                    is_displayable: True
+            target: "generatePromptResponse://Account_Executive_Summary"
+        explain_account_score:
+            description: "Explains the account CRM score: tier, model version and top reasons"
+            label: "Explain Account Score"
+            inputs:
+                accountId: string
+                    description: "Salesforce Id of the account"
+                    is_required: True
+                agentName: string
+                    description: "Calling agent, for the audit log"
+            outputs:
+                explanation: string
+                    description: "Score, tier, model version and top reasons"
+                    is_used_by_planner: True
+                    is_displayable: True
+            target: "apex://ExplainAccountScore"
+
+subagent consumption_insights:
+    label: "Consumption Insights"
+    description: "Live product consumption from Snowflake: credits, growth, contract utilization, projected exhaustion, workloads, and ad hoc analytics"
+    reasoning:
+        instructions: ->
+            if @variables.account_id == "":
+                | Ask which account, then call {!@actions.find_account}.
+            else:
+                | The account in focus is {!@variables.account_name}.
+            | For consumption, credits, growth, utilization, renewal capacity or workload trends, call {!@actions.get_telemetry}.
+              Report the key numbers, then the signals, then the source. If the source is cached, say so and give the time.
+              For questions the summary cannot answer, such as by warehouse, by month or compared with peers, call {!@actions.ask_snowflake}
+              with the user's question. Say that the Snowflake Cortex agent answered it and show the SQL it used when there is one.
+              Offer the next step: recommended use cases, an outreach email or an account plan.
+              For anything else, use {!@actions.switch_task}.
+        actions:
+            find_account: @actions.find_account
+                with accountName = ...
+                with agentName = "Sales_Strategy_Assistant"
+                set @variables.account_id = @outputs.accountId
+                set @variables.account_name = @outputs.accountName
+            get_telemetry: @actions.get_consumption_telemetry
+                available when @variables.account_id != ""
+                with accountId = @variables.account_id
+                with agentName = "Sales_Strategy_Assistant"
+                set @variables.telemetry_source = @outputs.source
+            ask_snowflake: @actions.ask_snowflake_analyst
+                with question = ...
+                with accountName = @variables.account_name
+                with agentName = "Sales_Strategy_Assistant"
+            switch_task: @utils.transition to @subagent.agent_router
+                description: "The user wants a brief, use cases, outreach, an account plan, pricing or something else"
+    actions:
+        find_account:
+            description: "Find an account by name or Id. Returns its Id, owner, industry, CRM tier and score."
+            label: "Find Account"
+            inputs:
+                accountName: string
+                    description: "Full or partial account name, or a Salesforce account Id"
+                    is_required: True
+                agentName: string
+                    description: "Calling agent, for the audit log"
+            outputs:
+                found: boolean
+                    description: "True when exactly one account matched"
+                accountId: string
+                    description: "Salesforce Id of the matched account"
+                accountName: string
+                    description: "Name of the matched account"
+                summary: string
+                    description: "Owner, industry, tier and score, or the candidate accounts"
+                    is_used_by_planner: True
+                    is_displayable: True
+            target: "apex://FindAccount"
+        get_consumption_telemetry:
+            description: "Reads live consumption for the account from Snowflake: credits, growth, contract utilization, projected exhaustion date and workload trends, with expansion and risk signals"
+            label: "Get Consumption Telemetry"
+            include_in_progress_indicator: True
+            progress_indicator_message: "Querying Snowflake"
+            inputs:
+                accountId: string
+                    description: "Salesforce Id of the account"
+                    is_required: True
+                agentName: string
+                    description: "Calling agent, for the audit log"
+            outputs:
+                summary: string
+                    description: "Consumption summary with numbers"
+                    is_used_by_planner: True
+                    is_displayable: True
+                source: string
+                    description: "Snowflake SQL API when live, or the cached snapshot time"
+                    is_used_by_planner: True
+                isLive: boolean
+                    description: "True when read live from Snowflake"
+                utilizationPct: number
+                    description: "Share of this term capacity already consumed"
+                projectedExhaustionDate: string
+                    description: "When capacity runs out at the current run rate"
+                signals: string
+                    description: "Expansion and risk signals"
+                    is_used_by_planner: True
+                    is_displayable: True
+            target: "apex://GetConsumptionTelemetry"
+        ask_snowflake_analyst:
+            description: "Asks the Snowflake Cortex agent an ad hoc analytics question. It writes SQL over the governed semantic view and searches case studies."
+            label: "Ask Snowflake Analyst"
+            include_in_progress_indicator: True
+            progress_indicator_message: "Asking the Snowflake Cortex agent"
+            inputs:
+                question: string
+                    description: "The analytics question in plain words"
+                    is_required: True
+                accountName: string
+                    description: "Account the question is about"
+                agentName: string
+                    description: "Calling agent, for the audit log"
+            outputs:
+                answer: string
+                    description: "Answer from the Snowflake Cortex agent"
+                    is_used_by_planner: True
+                    is_displayable: True
+                generatedSql: string
+                    description: "SQL that Cortex Analyst generated"
+                    is_used_by_planner: True
+                source: string
+                    description: "Where the answer came from"
+                    is_used_by_planner: True
+            target: "apex://AskSnowflakeAnalyst"
+
+subagent use_case_recommendations:
+    label: "Use Case Recommendations"
+    description: "Recommend the next use cases to sell from peer adoption in Snowflake, with case studies from Cortex Search"
+    reasoning:
+        instructions: ->
+            if @variables.account_id == "":
+                | Ask which account, then call {!@actions.find_account}.
+            else:
+                | The account in focus is {!@variables.account_name}.
+            | Call {!@actions.recommend} and present the top three use cases. For each: why it fits, how many industry peers
+              run it and their results, the case study, time to value, prerequisites and the estimated footprint in credits.
+              Indicative list values are internal context only; never present them as a price.
+              Then offer to draft an outreach email or build an account plan.
+              For anything else, use {!@actions.switch_task}.
+        actions:
+            find_account: @actions.find_account
+                with accountName = ...
+                with agentName = "Sales_Strategy_Assistant"
+                set @variables.account_id = @outputs.accountId
+                set @variables.account_name = @outputs.accountName
+            recommend: @actions.recommend_use_cases
+                available when @variables.account_id != ""
+                with accountId = @variables.account_id
+                with agentName = "Sales_Strategy_Assistant"
+                set @variables.top_use_case = @outputs.topUseCase
+            switch_task: @utils.transition to @subagent.agent_router
+                description: "The user wants a brief, consumption detail, outreach, an account plan, pricing or something else"
+    actions:
+        find_account:
+            description: "Find an account by name or Id. Returns its Id, owner, industry, CRM tier and score."
+            label: "Find Account"
+            inputs:
+                accountName: string
+                    description: "Full or partial account name, or a Salesforce account Id"
+                    is_required: True
+                agentName: string
+                    description: "Calling agent, for the audit log"
+            outputs:
+                found: boolean
+                    description: "True when exactly one account matched"
+                accountId: string
+                    description: "Salesforce Id of the matched account"
+                accountName: string
+                    description: "Name of the matched account"
+                summary: string
+                    description: "Owner, industry, tier and score, or the candidate accounts"
+                    is_used_by_planner: True
+                    is_displayable: True
+            target: "apex://FindAccount"
+        recommend_use_cases:
+            description: "Recommends the next three use cases for the account from peer adoption in Snowflake, with a case study for each from Cortex Search"
+            label: "Recommend Use Cases"
+            include_in_progress_indicator: True
+            progress_indicator_message: "Comparing with industry peers in Snowflake"
+            inputs:
+                accountId: string
+                    description: "Salesforce Id of the account"
+                    is_required: True
+                agentName: string
+                    description: "Calling agent, for the audit log"
+            outputs:
+                recommendations: string
+                    description: "Top three use cases with peers, outcomes, footprint, prerequisites and case studies"
+                    is_used_by_planner: True
+                    is_displayable: True
+                topUseCase: string
+                    description: "Name of the top use case"
+                source: string
+                    description: "Where the recommendations came from"
+                    is_used_by_planner: True
+            target: "apex://RecommendUseCases"
+
+subagent outreach:
+    label: "Outreach"
+    description: "Draft a personalized outreach email to a contact and save it for the account executive to send"
+    reasoning:
+        instructions: ->
+            if @variables.account_id == "":
+                | Ask which account, then call {!@actions.find_account}.
+            else:
+                | The account in focus is {!@variables.account_name}.
+            | Ask who the email is for if the user has not said. Then call {!@actions.draft_email} with the contact name and any
+              focus the user gave. Show the full draft.
+              If the user wants changes, call {!@actions.draft_email} again with the change as the focus.
+              When the user approves, call {!@actions.save_draft}. Never say the email was sent. The account executive sends it.
+              For anything else, use {!@actions.switch_task}.
+        actions:
+            find_account: @actions.find_account
+                with accountName = ...
+                with agentName = "Sales_Strategy_Assistant"
+                set @variables.account_id = @outputs.accountId
+                set @variables.account_name = @outputs.accountName
+            draft_email: @actions.sales_outreach_email
+                available when @variables.account_id != ""
+                with "Input:accountId" = @variables.account_id
+                with "Input:contactName" = ...
+                with "Input:focus" = ...
+                set @variables.email_draft = @outputs.promptResponse
+            save_draft: @actions.save_outreach_draft
+                available when @variables.email_draft != ""
+                with accountId = @variables.account_id
+                with contactName = ...
+                with emailDraft = @variables.email_draft
+                with agentName = "Sales_Strategy_Assistant"
+            switch_task: @utils.transition to @subagent.agent_router
+                description: "The user wants a brief, consumption detail, use cases, an account plan, pricing or something else"
+    actions:
+        find_account:
+            description: "Find an account by name or Id. Returns its Id, owner, industry, CRM tier and score."
+            label: "Find Account"
+            inputs:
+                accountName: string
+                    description: "Full or partial account name, or a Salesforce account Id"
+                    is_required: True
+                agentName: string
+                    description: "Calling agent, for the audit log"
+            outputs:
+                found: boolean
+                    description: "True when exactly one account matched"
+                accountId: string
+                    description: "Salesforce Id of the matched account"
+                accountName: string
+                    description: "Name of the matched account"
+                summary: string
+                    description: "Owner, industry, tier and score, or the candidate accounts"
+                    is_used_by_planner: True
+                    is_displayable: True
+            target: "apex://FindAccount"
+        sales_outreach_email:
+            description: "Drafts a personalized outreach email with Claude, grounded in meeting notes, telemetry and a peer case study"
+            label: "Draft Outreach Email"
+            include_in_progress_indicator: True
+            progress_indicator_message: "Drafting with Claude"
+            inputs:
+                "Input:accountId": string
+                    description: "Salesforce Id of the account"
+                    is_required: True
+                "Input:contactName": string
+                    description: "Name of the person the email is for"
+                    is_required: True
+                "Input:focus": string
+                    description: "Use case or topic to lead with, or a requested change to the last draft. Empty if none."
+            outputs:
+                promptResponse: string
+                    description: "The email draft, subject line first"
+                    is_used_by_planner: True
+                    is_displayable: True
+            target: "generatePromptResponse://Sales_Outreach_Email"
+        save_outreach_draft:
+            description: "Saves the approved draft as an open task on the contact for the account executive to review and send. Does not send email."
+            label: "Save Outreach Draft"
+            require_user_confirmation: True
+            inputs:
+                accountId: string
+                    description: "Salesforce Id of the account"
+                    is_required: True
+                contactName: string
+                    description: "Name of the recipient"
+                    is_required: True
+                emailDraft: string
+                    description: "Full draft including the subject line"
+                    is_required: True
+                agentName: string
+                    description: "Calling agent, for the audit log"
+            outputs:
+                taskId: string
+                    description: "Id of the task that holds the draft"
+                message: string
+                    description: "Confirmation"
+                    is_used_by_planner: True
+                    is_displayable: True
+            target: "apex://SaveOutreachDraft"
+
+subagent account_planning:
+    label: "Account Planning"
+    description: "Create a strategic account plan drafted from CRM and live Snowflake data, and check its progress"
+    reasoning:
+        instructions: ->
+            if @variables.account_id == "":
+                | Ask which account, then call {!@actions.find_account}.
+            else:
+                | The account in focus is {!@variables.account_name}.
+            | To create a plan, call {!@actions.create_plan}. Explain that it drafts five sections in the background with Claude:
+              consumption trends, recommended use cases, customer landscape, SWOT and account vision, and give the link.
+              To check progress or read the vision, call {!@actions.plan_status}.
+              For anything else, use {!@actions.switch_task}.
+        actions:
+            find_account: @actions.find_account
+                with accountName = ...
+                with agentName = "Sales_Strategy_Assistant"
+                set @variables.account_id = @outputs.accountId
+                set @variables.account_name = @outputs.accountName
+            create_plan: @actions.create_account_plan
+                available when @variables.account_id != ""
+                with accountId = @variables.account_id
+                with fiscalYear = ...
+                with agentName = "Sales_Strategy_Assistant"
+                set @variables.plan_id = @outputs.planId
+            plan_status: @actions.get_account_plan_status
+                available when @variables.account_id != ""
+                with accountId = @variables.account_id
+            switch_task: @utils.transition to @subagent.agent_router
+                description: "The user wants a brief, consumption detail, use cases, outreach, pricing or something else"
+    actions:
+        find_account:
+            description: "Find an account by name or Id. Returns its Id, owner, industry, CRM tier and score."
+            label: "Find Account"
+            inputs:
+                accountName: string
+                    description: "Full or partial account name, or a Salesforce account Id"
+                    is_required: True
+                agentName: string
+                    description: "Calling agent, for the audit log"
+            outputs:
+                found: boolean
+                    description: "True when exactly one account matched"
+                accountId: string
+                    description: "Salesforce Id of the matched account"
+                accountName: string
+                    description: "Name of the matched account"
+                summary: string
+                    description: "Owner, industry, tier and score, or the candidate accounts"
+                    is_used_by_planner: True
+                    is_displayable: True
+            target: "apex://FindAccount"
+        create_account_plan:
+            description: "Creates an account plan and starts drafting it in the background from CRM data and live Snowflake telemetry"
+            label: "Create Account Plan"
+            require_user_confirmation: True
+            inputs:
+                accountId: string
+                    description: "Salesforce Id of the account"
+                    is_required: True
+                fiscalYear: string
+                    description: "Plan year such as FY27. Empty means FY27."
+                agentName: string
+                    description: "Calling agent, for the audit log"
+            outputs:
+                planId: string
+                    description: "Id of the account plan"
+                planName: string
+                    description: "Name of the account plan"
+                    is_used_by_planner: True
+                message: string
+                    description: "What happens next and the link"
+                    is_used_by_planner: True
+                    is_displayable: True
+            target: "apex://CreateAccountPlan"
+        get_account_plan_status:
+            description: "Returns the status of the latest account plan for the account, with its vision once drafted"
+            label: "Get Account Plan Status"
+            inputs:
+                accountId: string
+                    description: "Salesforce Id of the account"
+                    is_required: True
+            outputs:
+                status: string
+                    description: "Plan status"
+                    is_used_by_planner: True
+                sectionsCompleted: number
+                    description: "Sections drafted out of five"
+                    is_used_by_planner: True
+                planId: string
+                    description: "Id of the latest plan"
+                message: string
+                    description: "Summary with the link and the vision"
+                    is_used_by_planner: True
+                    is_displayable: True
+            target: "apex://GetAccountPlanStatus"
+
+subagent deal_desk:
+    label: "Deal Desk"
+    description: "Guardrail for pricing, discounts, credit packs, ramps and contract terms: route to Deal Desk, never answer"
+    reasoning:
+        instructions: ->
+            if @variables.account_id == "":
+                | Ask which account, then call {!@actions.find_account}.
+            | You cannot quote, estimate, compare or approve prices, discounts, credit packs, ramps or contract terms, even as a range.
+              Say so in one sentence. Offer to open a Deal Desk review with a one-line summary of the request.
+              When the user agrees, call {!@actions.request_review}. Share the case number.
+              You can still share consumption facts that support the request, such as projected capacity needs.
+              For anything else, use {!@actions.switch_task}.
+        actions:
+            find_account: @actions.find_account
+                with accountName = ...
+                with agentName = "Sales_Strategy_Assistant"
+                set @variables.account_id = @outputs.accountId
+                set @variables.account_name = @outputs.accountName
+            request_review: @actions.request_deal_desk_review
+                available when @variables.account_id != ""
+                with accountId = @variables.account_id
+                with requestSummary = ...
+                with opportunityName = ...
+                with agentName = "Sales_Strategy_Assistant"
+            switch_task: @utils.transition to @subagent.agent_router
+                description: "The user wants something other than pricing or terms"
+    actions:
+        find_account:
+            description: "Find an account by name or Id. Returns its Id, owner, industry, CRM tier and score."
+            label: "Find Account"
+            inputs:
+                accountName: string
+                    description: "Full or partial account name, or a Salesforce account Id"
+                    is_required: True
+                agentName: string
+                    description: "Calling agent, for the audit log"
+            outputs:
+                found: boolean
+                    description: "True when exactly one account matched"
+                accountId: string
+                    description: "Salesforce Id of the matched account"
+                accountName: string
+                    description: "Name of the matched account"
+                summary: string
+                    description: "Owner, industry, tier and score, or the candidate accounts"
+                    is_used_by_planner: True
+                    is_displayable: True
+            target: "apex://FindAccount"
+        request_deal_desk_review:
+            description: "Opens a Deal Desk review case for a pricing, discount or contract-terms request"
+            label: "Request Deal Desk Review"
+            require_user_confirmation: True
+            inputs:
+                accountId: string
+                    description: "Salesforce Id of the account"
+                    is_required: True
+                requestSummary: string
+                    description: "One line on what was asked for"
+                    is_required: True
+                opportunityName: string
+                    description: "Opportunity the request relates to, if known"
+                agentName: string
+                    description: "Calling agent, for the audit log"
+            outputs:
+                caseNumber: string
+                    description: "Deal Desk case number"
+                    is_used_by_planner: True
+                message: string
+                    description: "Confirmation"
+                    is_used_by_planner: True
+                    is_displayable: True
+            target: "apex://RequestDealDeskReview"
+
+subagent feedback:
+    label: "Feedback"
+    description: "Record whether an answer was helpful"
+    reasoning:
+        instructions: ->
+            | Call {!@actions.record_feedback} with Helpful or Not Helpful and the user's comment. Thank them in one sentence.
+              Then use {!@actions.switch_task} if they ask for anything else.
+        actions:
+            record_feedback: @actions.record_agent_feedback
+                with rating = ...
+                with comment = ...
+                with agentName = "Sales_Strategy_Assistant"
+            switch_task: @utils.transition to @subagent.agent_router
+                description: "The user asks for something else"
+    actions:
+        record_agent_feedback:
+            description: "Records whether the last answer was helpful, with a comment"
+            label: "Record Feedback"
+            inputs:
+                rating: string
+                    description: "Helpful or Not Helpful"
+                    is_required: True
+                comment: string
+                    description: "What was good or wrong"
+                agentName: string
+                    description: "Calling agent"
+            outputs:
+                message: string
+                    description: "Confirmation"
+                    is_used_by_planner: True
+                    is_displayable: True
+            target: "apex://RecordAgentFeedback"
