@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Account_Score__c</fullName>
+    <description>Calibrated chance of expansion next quarter, 0 to 100. Written by the governance agent.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>Chance of expansion next quarter, in percent. Set by the CRM scoring agents.</inlineHelpText>
+    <label>Account Score</label>
+    <precision>4</precision>
+    <required>false</required>
+    <scale>1</scale>
+    <type>Number</type>
+</CustomField>

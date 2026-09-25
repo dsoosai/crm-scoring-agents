@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Lead_Grade__c</fullName>
+    <description>A is the top 15 percent, B the next 25, C the next 30, D the rest, at the time the model was calibrated.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>A is best. Tiers come from the current champion model.</inlineHelpText>
+    <label>Lead Grade</label>
+    <length>1</length>
+    <required>false</required>
+    <type>Text</type>
+</CustomField>

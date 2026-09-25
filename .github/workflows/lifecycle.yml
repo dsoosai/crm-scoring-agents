@@ -1,0 +1,65 @@
+# Live mode: one cycle against Snowflake and a Salesforce org.
+# Needs repository secrets: SNOWFLAKE_ACCOUNT, SNOWFLAKE_PRIVATE_KEY, SF_USERNAME,
+# SF_CONSUMER_KEY, SF_PRIVATE_KEY (or SF_PASSWORD and SF_SECURITY_TOKEN).
+name: lifecycle
+on:
+  workflow_dispatch:
+    inputs:
+      object:
+        type: choice
+        options: [lead, account]
+        default: lead
+      period:
+        description: "YYYY-MM for leads, YYYYQn for accounts"
+        required: true
+      approve:
+        description: "Approve an account promotion if the gates pass (you are the approver)"
+        type: boolean
+        default: false
+  # Turn on once new periods land in Snowflake on their own:
+  # schedule:
+  #   - cron: "0 14 2 * *"         # leads: monthly rebuild on the 2nd
+  #   - cron: "0 15 3 1,4,7,10 *"  # accounts: quarterly rescore
+
+jobs:
+  cycle:
+    runs-on: ubuntu-latest
+    environment: live
+    env:
+      CRM_WAREHOUSE: snowflake
+      CRM_TARGET: salesforce
+      SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+      SNOWFLAKE_USER: CRM_AGENT_SVC
+      SNOWFLAKE_PRIVATE_KEY_FILE: /tmp/sf_key.p8
+      SF_USERNAME: ${{ secrets.SF_USERNAME }}
+      SF_CONSUMER_KEY: ${{ secrets.SF_CONSUMER_KEY }}
+      SF_PASSWORD: ${{ secrets.SF_PASSWORD }}
+      SF_SECURITY_TOKEN: ${{ secrets.SF_SECURITY_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[salesforce,snowflake]"
+      - name: Write keys
+        env:
+          SNOWFLAKE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
+          SF_KEY: ${{ secrets.SF_PRIVATE_KEY }}
+        run: |
+          printf '%s\n' "$SNOWFLAKE_KEY" > /tmp/sf_key.p8
+          if [ -n "$SF_KEY" ]; then
+            printf '%s\n' "$SF_KEY" > /tmp/salesforce.key
+            echo "SF_PRIVATE_KEY_FILE=/tmp/salesforce.key" >> "$GITHUB_ENV"
+          fi
+      - name: Run one lifecycle cycle
+        env:
+          OBJ: ${{ inputs.object }}
+          PERIOD: ${{ inputs.period }}
+          APPROVE: ${{ inputs.approve }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          if [ "$APPROVE" = "true" ]; then
+            crm-agent cycle "$OBJ" "$PERIOD" --approve --approver "$ACTOR via GitHub Actions"
+          else
+            crm-agent cycle "$OBJ" "$PERIOD"
+          fi

@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CRM Scoring Agents</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface-1: #fcfcfb;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --border: rgba(11,11,11,0.10);
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --watch-fill: #86b6ef;  --watch-ink: #0b0b0b;
+  --action-fill: #256abf; --action-ink: #ffffff;
+  --good: #0ca30c; --warning: #fab219; --critical: #d03b3b;
+  --success-text: #006300;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface-1: #1a1a19;
+    --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70;
+    --watch-fill: #1c5cab; --watch-ink: #ffffff;
+    --action-fill: #5598e7; --action-ink: #0b0b0b;
+    --success-text: #0ca30c;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface-1: #1a1a19;
+  --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #898781;
+  --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+  --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70;
+  --watch-fill: #1c5cab; --watch-ink: #ffffff;
+  --action-fill: #5598e7; --action-ink: #0b0b0b;
+  --success-text: #0ca30c;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--text-primary);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 1120px; margin: 0 auto; padding: 32px 16px 64px; }
+h1 { font-size: 28px; line-height: 1.2; margin: 0 0 6px; font-weight: 650; }
+h2 { font-size: 20px; margin: 40px 0 4px; font-weight: 650; }
+h3 { font-size: 15px; margin: 24px 0 8px; font-weight: 600; }
+p.lead { color: var(--text-secondary); margin: 0 0 20px; max-width: 760px; }
+.sub { color: var(--text-secondary); margin: 0 0 16px; }
+.card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin: 20px 0 8px; }
+.tile .label { color: var(--text-secondary); font-size: 13px; }
+.tile .value { font-size: 26px; font-weight: 600; margin-top: 2px; }
+.tile .delta { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+.tile .delta b { color: var(--success-text); font-weight: 600; }
+.chart { position: relative; width: 100%; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; color: var(--text-secondary); margin: 4px 0 8px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { display: inline-block; width: 16px; height: 2px; border-radius: 1px; }
+.legend i.dot { width: 10px; height: 10px; border-radius: 50%; }
+.tooltip { position: fixed; pointer-events: none; background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 10px; font-size: 13px; box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  display: none; z-index: 10; max-width: 320px; }
+.tooltip .t-head { color: var(--text-secondary); margin-bottom: 4px; }
+.tooltip .t-row { display: flex; align-items: center; gap: 8px; }
+.tooltip .t-row i { width: 12px; height: 2px; border-radius: 1px; flex: none; }
+.tooltip .t-row b { font-weight: 600; min-width: 44px; font-variant-numeric: tabular-nums; }
+.tooltip .t-row span { color: var(--text-secondary); }
+.tooltip .t-note { margin-top: 6px; color: var(--text-secondary); }
+.grid-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+th { color: var(--text-secondary); font-weight: 600; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+table.heat td.cell { text-align: center; font-variant-numeric: tabular-nums; min-width: 52px; border: 2px solid var(--surface-1); border-radius: 4px; }
+table.heat td.watch { background: var(--watch-fill); color: var(--watch-ink); }
+table.heat td.action { background: var(--action-fill); color: var(--action-ink); font-weight: 600; }
+table.heat th.rot { font-weight: 500; color: var(--text-muted); text-align: center; white-space: nowrap; }
+.keys { display: flex; gap: 16px; font-size: 13px; color: var(--text-secondary); margin-top: 8px; flex-wrap: wrap; }
+.keys i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: -2px; margin-right: 6px; border: 1px solid var(--border); }
+.badge { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; padding: 1px 8px; border-radius: 999px;
+  border: 1px solid var(--border); color: var(--text-primary); white-space: nowrap; }
+.badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; }
+.badge.healthy::before { background: var(--good); }
+.badge.watch::before { background: var(--warning); }
+.badge.action::before { background: var(--critical); }
+.decision { font-weight: 600; }
+details { margin-top: 8px; }
+summary { cursor: pointer; color: var(--text-secondary); font-size: 13px; }
+.cycle { border-bottom: 1px solid var(--grid); padding: 10px 0; }
+.cycle-head { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; }
+.cycle-head .p { font-weight: 600; min-width: 64px; font-variant-numeric: tabular-nums; }
+.cycle ul { margin: 6px 0 0 18px; padding: 0; color: var(--text-secondary); font-size: 13px; }
+.flow { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.flow .card h4 { margin: 0 0 4px; font-size: 15px; }
+.flow .card p { margin: 0; color: var(--text-secondary); font-size: 13px; }
+.flow .card code { font-size: 12px; }
+footer { margin-top: 48px; color: var(--text-muted); font-size: 13px; }
+.theme-toggle { float: right; font: inherit; font-size: 13px; background: var(--surface-1); color: var(--text-primary);
+  border: 1px solid var(--border); border-radius: 8px; padding: 4px 10px; cursor: pointer; }
+@media (max-width: 640px) { h1 { font-size: 22px; } .tile .value { font-size: 22px; } }
+</style>
+</head>
+<body>
+<main>
+  <button class="theme-toggle" id="theme" type="button">Theme</button>
+  <h1>CRM scoring agents</h1>
+  <p class="lead">Three agents keep a lead score and an account score honest in production. They watch for drift,
+    build challengers, gate promotions and write scores back to Salesforce. This page replays 15 months of leads
+    and 6 quarters of accounts, with scripted drift, against two baselines that never change.</p>
+
+  <div class="tiles" id="tiles"></div>
+
+  <section id="lead"></section>
+  <section id="account"></section>
+
+  <h2>How one cycle runs</h2>
+  <p class="sub">Four A2A messages per cycle. The same tools are exposed over MCP.</p>
+  <div class="flow">
+    <div class="card"><h4>1. Monitor Agent</h4><p>Input drift (PSI) the day records land. Unseen categories. AUC, calibration and lift once outcomes arrive.</p><p><code>check_drift</code></p></div>
+    <div class="card"><h4>2. Builder Agent</h4><p>Plans the cheapest update that could work: recalibrate, warm-start fine-tune, or full retrain. Cannot promote.</p><p><code>build_challengers</code></p></div>
+    <div class="card"><h4>3. Governance Agent</h4><p>Gates every challenger against the champion on an out-of-time holdout. Promotes, holds, or asks RevOps.</p><p><code>evaluate_and_promote</code></p></div>
+    <div class="card"><h4>4. Write-back</h4><p>Champion scores the period with reasons. Salesforce Account and Lead fields updated. Every step audited.</p><p><code>score_and_write_back</code></p></div>
+  </div>
+
+  <footer>Synthetic data with scripted drift. Source: github.com/dsoosai/crm-scoring-agents</footer>
+</main>
+<div class="tooltip" id="tip" role="status"></div>
+
+<script>
+const DATA = {"objects": {"lead": {"label": "Lead conversion (30 days)", "cadence": "monthly", "quality": [{"period": "2025-06", "managed": 0.7584, "frozen": 0.7584, "rules": 0.7502, "champion": "lead-v1"}, {"period": "2025-07", "managed": 0.7711, "frozen": 0.7711, "rules": 0.7317, "champion": "lead-v1"}, {"period": "2025-08", "managed": 0.7309, "frozen": 0.7309, "rules": 0.687, "champion": "lead-v1"}, {"period": "2025-09", "managed": 0.7798, "frozen": 0.7798, "rules": 0.7056, "champion": "lead-v1"}, {"period": "2025-10", "managed": 0.7606, "frozen": 0.7606, "rules": 0.7349, "champion": "lead-v1"}, {"period": "2025-11", "managed": 0.6704, "frozen": 0.6704, "rules": 0.6368, "champion": "lead-v1"}, {"period": "2025-12", "managed": 0.699, "frozen": 0.699, "rules": 0.6296, "champion": "lead-v1"}, {"period": "2026-01", "managed": 0.7636, "frozen": 0.7144, "rules": 0.6541, "champion": "lead-v13"}, {"period": "2026-02", "managed": 0.7399, "frozen": 0.7053, "rules": 0.6259, "champion": "lead-v13"}, {"period": "2026-03", "managed": 0.7594, "frozen": 0.7018, "rules": 0.63, "champion": "lead-v16"}, {"period": "2026-04", "managed": 0.7524, "frozen": 0.6822, "rules": 0.6211, "champion": "lead-v16"}, {"period": "2026-05", "managed": 0.7106, "frozen": 0.6472, "rules": 0.605, "champion": "lead-v21"}, {"period": "2026-06", "managed": 0.7174, "frozen": 0.6902, "rules": 0.6397, "champion": "lead-v21"}, {"period": "2026-07", "managed": 0.7287, "frozen": 0.6898, "rules": 0.6336, "champion": "lead-v21"}, {"period": "2026-08", "managed": 0.74, "frozen": 0.6892, "rules": 0.6314, "champion": "lead-v21"}], "promotions": [{"cycle": "2026-01", "version": "lead-v13", "method": "retrain"}, {"cycle": "2026-03", "version": "lead-v16", "method": "retrain"}, {"cycle": "2026-05", "version": "lead-v21", "method": "retrain"}], "drift": {"periods": ["2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12", "2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09"], "features": [{"key": "keyword", "label": "Search keyword"}, {"key": "site_visits", "label": "Site visits"}, {"key": "lead_source", "label": "Lead source"}, {"key": "days_to_first_touch", "label": "Days to first touch"}, {"key": "company_size", "label": "Company size"}], "values": [[0.0027, 0.007, 0.004, 0.0021, 0.0029, 0.0035, 0.0039, 0.0006, 0.9354, 1.3501, 2.0297, 0.7491, 0.7579, 0.7423, 0.8338], [0.0122, 0.0031, 0.0021, 0.0045, 0.2627, 0.2687, 0.2659, 0.1587, 0.1883, 0.1368, 0.1252, 0.0096, 0.0133, 0.002, 0.0104], [0.0014, 0.0001, 0.0007, 0.0007, 0.0087, 0.0039, 0.0037, 0.0009, 0.006, 0.0019, 0.0053, 0.1903, 0.2174, 0.1808, 0.1633], [0.0009, 0.0039, 0.0055, 0.0112, 0.0165, 0.0103, 0.0081, 0.0058, 0.0062, 0.001, 0.0036, 0.0199, 0.0278, 0.009, 0.0223], [0.0052, 0.0131, 0.0086, 0.0074, 0.0124, 0.0018, 0.0111, 0.0115, 0.0155, 0.0076, 0.0063, 0.0059, 0.0169, 0.0074, 0.0014]]}, "timeline": [{"period": "2025-07", "status": "healthy", "findings": ["No material drift. Champion is healthy."], "plan": ["Scheduled monthly rebuild: always build a full-retrain challenger."], "challengers": [{"version": "lead-v2", "method": "retrain", "auc": 0.7617, "passed": false, "tier_churn": null, "unknown_category_share": 0, "failed_gates": ["beats_champion"]}], "decision": "hold", "champion": "lead-v1", "reason": "No challenger passed every gate. Champion holds. lead-v2 failed beats_champion", "summary": "Lead cycle 2025-07: monitor status healthy. Builder tried retrain. Held lead-v1. No challenger passed every gate. Champion holds. lead-v2 failed beats_champion. Scored 1179 records with lead-v1 and updated the CRM.", "scored": 1179, "tiers": {"A": 174, "B": 292, "C": 389, "D": 324}}, {"period": "2025-08", "status": "healthy", "findings": ["No material drift. Champion is healthy."], "plan": ["Scheduled monthly rebuild: always build a full-retrain challenger."], "challengers": [{"version": "lead-v3", "method": "retrain", "auc": 0.7642, "passed": false, "tier_churn": null, "unknown_category_share": 0, "failed_gates": ["beats_champion"]}], "decision": "hold", "champion": "lead-v1", "reason": "No challenger passed every gate. Champion holds. lead-v3 failed beats_champion", "summary": "Lead cycle 2025-08: monitor status healthy. Builder tried retrain. Held lead-v1. No challenger passed every gate. Champion holds. lead-v3 failed beats_champion. Scored 1197 records with lead-v1 and updated the CRM.", "scored": 1197, "tiers": {"A": 179, "B": 317, "C": 364, "D": 337}}, {"period": "2025-09", "status": "watch", "findings": ["AUC down 0.028 vs promotion baseline (watch)"], "plan": ["Scheduled monthly rebuild: always build a full-retrain challenger."], "challengers": [{"version": "lead-v4", "method": "retrain", "auc": 0.7212, "passed": false, "tier_churn": null, "unknown_category_share": 0, "failed_gates": ["beats_champion"]}], "decision": "hold", "champion": "lead-v1", "reason": "No challenger passed every gate. Champion holds. lead-v4 failed beats_champion", "summary": "Lead cycle 2025-09: monitor status watch. Findings: AUC down 0.028 vs promotion baseline (watch). Builder tried retrain. Held lead-v1. No challenger passed every gate. Champion holds. lead-v4 failed beats_champion. Scored 1155 records with lead-v1 and updated the CRM.", "scored": 1155, "tiers": {"A": 188, "B": 269, "C": 376, "D": 322}}, {"period": "2025-10", "status": "healthy", "findings": ["No material drift. Champion is healthy."], "plan": ["Scheduled monthly rebuild: always build a full-retrain challenger."], "challengers": [{"version": "lead-v5", "method": "retrain", "auc": 0.7759, "passed": false, "tier_churn": null, "unknown_category_share": 0, "failed_gates": ["beats_champion"]}], "decision": "hold", "champion": "lead-v1", "reason": "No challenger passed every gate. Champion holds. lead-v5 failed beats_champion", "summary": "Lead cycle 2025-10: monitor status healthy. Builder tried retrain. Held lead-v1. No challenger passed every gate. Champion holds. lead-v5 failed beats_champion. Scored 1231 records with lead-v1 and updated the CRM.", "scored": 1231, "tiers": {"A": 210, "B": 286, "C": 385, "D": 350}}, {"period": "2025-11", "status": "action", "findings": ["Site visits input drift PSI 0.26 (action)"], "plan": ["Scheduled monthly rebuild: always build a full-retrain challenger.", "Performance or input drift: try a warm-start fine-tune on the latest labeled data."], "challengers": [{"version": "lead-v6", "method": "finetune", "auc": 0.7482, "passed": false, "tier_churn": null, "unknown_category_share": 0, "failed_gates": ["beats_champion", "brier"]}, {"version": "lead-v7", "method": "retrain", "auc": 0.7679, "passed": false, "tier_churn": null, "unknown_category_share": 0, "failed_gates": ["beats_champion"]}], "decision": "hold", "champion": "lead-v1", "reason": "No challenger passed every gate. Champion holds. lead-v6 failed beats_champion, brier; lead-v7 failed beats_champion", "summary": "Lead cycle 2025-11: monitor status action. Findings: Site visits input drift PSI 0.26 (action). Builder tried finetune, retrain. Held lead-v1. No challenger passed every gate. Champion holds. lead-v6 failed beats_champion, brier; lead-v7 failed beats_champion. Scored 1231 records with lead-v1 and updated the CRM.", "scored": 1231, "tiers": {"A": 381, "B": 291, "C": 287, "D": 272}}, {"period": "2025-12", "status": "action", "findings": ["Site visits input drift PSI 0.27 (action)", "AUC down 0.088 vs promotion baseline on 2025-11 outcomes", "Scores run hot by 5.0 points on 2025-11"], "plan": ["Scheduled monthly rebuild: always build a full-retrain challenger.", "Calibration gap found: try the cheapest fix, a recalibration.", "Performance or input drift: try a warm-start fine-tune on the latest labeled data."], "challengers": [{"version": "lead-v8", "method": "recalibrate", "auc": 0.6704, "passed": false, "tier_churn": null, "unknown_category_share": 0, "failed_gates": ["auc_floor", "brier", "calibration"]}, {"version": "lead-v9", "method": "finetune", "auc": 0.6914, "passed": false, "tier_churn": null, "unknown_category_share": 0, "failed_gates": ["auc_floor", "calibration"]}, {"version": "lead-v10", "method": "retrain", "auc": 0.7073, "passed": false, "tier_churn": null, "unknown_category_share": 0, "failed_gates": ["calibration"]}], "decision": "hold", "champion": "lead-v1", "reason": "No challenger passed every gate. Champion holds. lead-v8 failed auc_floor, brier, calibration; lead-v9 failed auc_floor, calibration; lead-v10 failed calibration", "summary": "Lead cycle 2025-12: monitor status action. Findings: Site visits input drift PSI 0.27 (action); AUC down 0.088 vs promotion baseline on 2025-11 outcomes; Scores run hot by 5.0 points on 2025-11. Builder tried recalibrate, finetune, retrain. Held lead-v1. No challenger passed every gate. Champion holds. lead-v8 failed auc_floor, brier, calibration; lead-v9 failed auc_floor, calibration; lead-v10 failed calibration. Scored 1176 records with lead-v1 and updated the CRM.", "scored": 1176, "tiers": {"A": 384, "B": 247, "C": 277, "D": 268}}, {"period": "2026-01", "status": "action", "findings": ["Site visits input drift PSI 0.27 (action)", "AUC down 0.059 vs promotion baseline on 2025-12 outcomes", "Scores run hot by 6.1 points on 2025-12"], "plan": ["Scheduled monthly rebuild: always build a full-retrain challenger.", "Calibration gap found: try the cheapest fix, a recalibration.", "Performance or input drift: try a warm-start fine-tune on the latest labeled data."], "challengers": [{"version": "lead-v11", "method": "recalibrate", "auc": 0.699, "passed": false, "tier_churn": null, "unknown_category_share": 0, "failed_gates": ["auc_floor", "segment_floor"]}, {"version": "lead-v12", "method": "finetune", "auc": 0.7517, "passed": true, "tier_churn": null, "unknown_category_share": 0, "failed_gates": []}, {"version": "lead-v13", "method": "retrain", "auc": 0.7631, "passed": true, "tier_churn": null, "unknown_category_share": 0, "failed_gates": []}], "decision": "promote", "champion": "lead-v13", "reason": "lead-v13 (retrain) passed all gates. AUC 0.763 vs champion 0.699 on 2025-12.", "summary": "Lead cycle 2026-01: monitor status action. Findings: Site visits input drift PSI 0.27 (action); AUC down 0.059 vs promotion baseline on 2025-12 outcomes; Scores run hot by 6.1 points on 2025-12. Builder tried recalibrate, finetune, retrain. Promoted lead-v13 over lead-v1. lead-v13 (retrain) passed all gates. AUC 0.763 vs champion 0.699 on 2025-12. Scored 1172 records with lead-v13 and updated the CRM.", "scored": 1172, "tiers": {"A": 164, "B": 318, "C": 321, "D": 369}}, {"period": "2026-02", "status": "watch", "findings": ["Site visits input drift PSI 0.16 (watch)"], "plan": ["Scheduled monthly rebuild: always build a full-retrain challenger."], "challengers": [{"version": "lead-v14", "method": "retrain", "auc": 0.7556, "passed": false, "tier_churn": null, "unknown_category_share": 0, "failed_gates": ["beats_champion"]}], "decision": "hold", "champion": "lead-v13", "reason": "No challenger passed every gate. Champion holds. lead-v14 failed beats_champion", "summary": "Lead cycle 2026-02: monitor status watch. Findings: Site visits input drift PSI 0.16 (watch). Builder tried retrain. Held lead-v13. No challenger passed every gate. Champion holds. lead-v14 failed beats_champion. Scored 1242 records with lead-v13 and updated the CRM.", "scored": 1242, "tiers": {"A": 163, "B": 308, "C": 377, "D": 394}}, {"period": "2026-03", "status": "action", "findings": ["Search keyword input drift PSI 0.94 (action)", "Site visits input drift PSI 0.19 (watch)", "New search keyword values the champion has never seen: AI Agents (13% of records)", "AUC down 0.023 vs promotion baseline (watch)"], "plan": ["Scheduled monthly rebuild: always build a full-retrain challenger.", "New keyword values AI Agents have no outcomes yet. The champion treats them as unknown until labels land; no update path can learn them this cycle.", "Performance or input drift: try a warm-start fine-tune on the latest labeled data."], "challengers": [{"version": "lead-v15", "method": "finetune", "auc": 0.7157, "passed": false, "tier_churn": null, "unknown_category_share": 0.1281, "failed_gates": ["beats_champion"]}, {"version": "lead-v16", "method": "retrain", "auc": 0.7535, "passed": true, "tier_churn": null, "unknown_category_share": 0.1281, "failed_gates": []}], "decision": "promote", "champion": "lead-v16", "reason": "lead-v16 (retrain) passed all gates. AUC 0.753 vs champion 0.740 on 2026-02.", "summary": "Lead cycle 2026-03: monitor status action. Findings: Search keyword input drift PSI 0.94 (action); Site visits input drift PSI 0.19 (watch); New search keyword values the champion has never seen: AI Agents (13% of records). Builder tried finetune, retrain. Promoted lead-v16 over lead-v13. lead-v16 (retrain) passed all gates. AUC 0.753 vs champion 0.740 on 2026-02. Scored 1163 records with lead-v16 and updated the CRM.", "scored": 1163, "tiers": {"A": 131, "B": 311, "C": 327, "D": 394}}, {"period": "2026-04", "status": "action", "findings": ["Search keyword input drift PSI 1.35 (action)", "Site visits input drift PSI 0.14 (watch)", "New search keyword values the champion has never seen: AI Agents (18% of records)"], "plan": ["Scheduled monthly rebuild: always build a full-retrain challenger.", "New keyword values AI Agents have no outcomes yet. The champion treats them as unknown until labels land; no update path can learn them this cycle.", "Performance or input drift: try a warm-start fine-tune on the latest labeled data."], "challengers": [{"version": "lead-v17", "method": "finetune", "auc": 0.7319, "passed": false, "tier_churn": null, "unknown_category_share": 0.1756, "failed_gates": ["beats_champion", "brier"]}, {"version": "lead-v18", "method": "retrain", "auc": 0.7514, "passed": false, "tier_churn": null, "unknown_category_share": 0.1756, "failed_gates": ["beats_champion"]}], "decision": "hold", "champion": "lead-v16", "reason": "No challenger passed every gate. Champion holds. lead-v17 failed beats_champion, brier; lead-v18 failed beats_champion", "summary": "Lead cycle 2026-04: monitor status action. Findings: Search keyword input drift PSI 1.35 (action); Site visits input drift PSI 0.14 (watch); New search keyword values the champion has never seen: AI Agents (18% of records). Builder tried finetune, retrain. Held lead-v16. No challenger passed every gate. Champion holds. lead-v17 failed beats_champion, brier; lead-v18 failed beats_champion. Scored 1162 records with lead-v16 and updated the CRM.", "scored": 1162, "tiers": {"A": 187, "B": 274, "C": 346, "D": 355}}, {"period": "2026-05", "status": "action", "findings": ["Search keyword input drift PSI 2.03 (action)", "Site visits input drift PSI 0.13 (watch)", "New search keyword values the champion has never seen: AI Agents (25% of records)", "Scores run cold by 3.6 points on 2026-04"], "plan": ["Scheduled monthly rebuild: always build a full-retrain challenger.", "New keyword values AI Agents now have outcomes in the training window. Only a full retrain can learn them.", "Calibration gap found: try the cheapest fix, a recalibration.", "Performance or input drift: try a warm-start fine-tune on the latest labeled data."], "challengers": [{"version": "lead-v19", "method": "recalibrate", "auc": 0.7524, "passed": true, "tier_churn": null, "unknown_category_share": 0.2494, "failed_gates": []}, {"version": "lead-v20", "method": "finetune", "auc": 0.7466, "passed": false, "tier_churn": null, "unknown_category_share": 0.2494, "failed_gates": ["beats_champion"]}, {"version": "lead-v21", "method": "retrain", "auc": 0.7651, "passed": true, "tier_churn": null, "unknown_category_share": 0, "failed_gates": []}], "decision": "promote", "champion": "lead-v21", "reason": "lead-v21 (retrain) passed all gates. AUC 0.765 vs champion 0.752 on 2026-04.", "summary": "Lead cycle 2026-05: monitor status action. Findings: Search keyword input drift PSI 2.03 (action); Site visits input drift PSI 0.13 (watch); New search keyword values the champion has never seen: AI Agents (25% of records). Builder tried recalibrate, finetune, retrain. Promoted lead-v21 over lead-v16. lead-v21 (retrain) passed all gates. AUC 0.765 vs champion 0.752 on 2026-04. Scored 1231 records with lead-v21 and updated the CRM.", "scored": 1231, "tiers": {"A": 197, "B": 371, "C": 388, "D": 275}}, {"period": "2026-06", "status": "action", "findings": ["Search keyword input drift PSI 0.75 (action)", "Lead source input drift PSI 0.19 (watch)", "AUC down 0.054 vs promotion baseline on 2026-05 outcomes"], "plan": ["Scheduled monthly rebuild: always build a full-retrain challenger.", "Performance or input drift: try a warm-start fine-tune on the latest labeled data."], "challengers": [{"version": "lead-v22", "method": "finetune", "auc": 0.7079, "passed": false, "tier_churn": null, "unknown_category_share": 0, "failed_gates": ["beats_champion"]}, {"version": "lead-v23", "method": "retrain", "auc": 0.7029, "passed": false, "tier_churn": null, "unknown_category_share": 0, "failed_gates": ["beats_champion"]}], "decision": "hold", "champion": "lead-v21", "reason": "No challenger passed every gate. Champion holds. lead-v22 failed beats_champion; lead-v23 failed beats_champion", "summary": "Lead cycle 2026-06: monitor status action. Findings: Search keyword input drift PSI 0.75 (action); Lead source input drift PSI 0.19 (watch); AUC down 0.054 vs promotion baseline on 2026-05 outcomes. Builder tried finetune, retrain. Held lead-v21. No challenger passed every gate. Champion holds. lead-v22 failed beats_champion; lead-v23 failed beats_champion. Scored 1202 records with lead-v21 and updated the CRM.", "scored": 1202, "tiers": {"A": 212, "B": 348, "C": 377, "D": 265}}, {"period": "2026-07", "status": "action", "findings": ["Search keyword input drift PSI 0.76 (action)", "Lead source input drift PSI 0.22 (watch)", "AUC down 0.048 vs promotion baseline on 2026-06 outcomes"], "plan": ["Scheduled monthly rebuild: always build a full-retrain challenger.", "Performance or input drift: try a warm-start fine-tune on the latest labeled data."], "challengers": [{"version": "lead-v24", "method": "finetune", "auc": 0.683, "passed": false, "tier_churn": null, "unknown_category_share": 0, "failed_gates": ["auc_floor", "beats_champion", "brier"]}, {"version": "lead-v25", "method": "retrain", "auc": 0.7027, "passed": false, "tier_churn": null, "unknown_category_share": 0, "failed_gates": ["beats_champion"]}], "decision": "hold", "champion": "lead-v21", "reason": "No challenger passed every gate. Champion holds. lead-v24 failed auc_floor, beats_champion, brier; lead-v25 failed beats_champion", "summary": "Lead cycle 2026-07: monitor status action. Findings: Search keyword input drift PSI 0.76 (action); Lead source input drift PSI 0.22 (watch); AUC down 0.048 vs promotion baseline on 2026-06 outcomes. Builder tried finetune, retrain. Held lead-v21. No challenger passed every gate. Champion holds. lead-v24 failed auc_floor, beats_champion, brier; lead-v25 failed beats_champion. Scored 1197 records with lead-v21 and updated the CRM.", "scored": 1197, "tiers": {"A": 196, "B": 371, "C": 360, "D": 270}}, {"period": "2026-08", "status": "action", "findings": ["Search keyword input drift PSI 0.74 (action)", "Lead source input drift PSI 0.18 (watch)", "AUC down 0.036 vs promotion baseline (watch)"], "plan": ["Scheduled monthly rebuild: always build a full-retrain challenger.", "Performance or input drift: try a warm-start fine-tune on the latest labeled data."], "challengers": [{"version": "lead-v26", "method": "finetune", "auc": 0.7231, "passed": false, "tier_churn": null, "unknown_category_share": 0, "failed_gates": ["beats_champion"]}, {"version": "lead-v27", "method": "retrain", "auc": 0.7342, "passed": false, "tier_churn": null, "unknown_category_share": 0, "failed_gates": ["beats_champion"]}], "decision": "hold", "champion": "lead-v21", "reason": "No challenger passed every gate. Champion holds. lead-v26 failed beats_champion; lead-v27 failed beats_champion", "summary": "Lead cycle 2026-08: monitor status action. Findings: Search keyword input drift PSI 0.74 (action); Lead source input drift PSI 0.18 (watch); AUC down 0.036 vs promotion baseline (watch). Builder tried finetune, retrain. Held lead-v21. No challenger passed every gate. Champion holds. lead-v26 failed beats_champion; lead-v27 failed beats_champion. Scored 1182 records with lead-v21 and updated the CRM.", "scored": 1182, "tiers": {"A": 216, "B": 343, "C": 353, "D": 270}}, {"period": "2026-09", "status": "action", "findings": ["Search keyword input drift PSI 0.83 (action)", "Lead source input drift PSI 0.16 (watch)", "AUC down 0.025 vs promotion baseline (watch)", "Calibration gap -2.9 points (watch)"], "plan": ["Scheduled monthly rebuild: always build a full-retrain challenger.", "Calibration gap found: try the cheapest fix, a recalibration.", "Performance or input drift: try a warm-start fine-tune on the latest labeled data."], "challengers": [{"version": "lead-v28", "method": "recalibrate", "auc": 0.74, "passed": false, "tier_churn": null, "unknown_category_share": 0, "failed_gates": ["beats_champion", "calibration"]}, {"version": "lead-v29", "method": "finetune", "auc": 0.7253, "passed": false, "tier_churn": null, "unknown_category_share": 0, "failed_gates": ["beats_champion", "brier", "calibration"]}, {"version": "lead-v30", "method": "retrain", "auc": 0.738, "passed": false, "tier_churn": null, "unknown_category_share": 0, "failed_gates": ["beats_champion", "calibration"]}], "decision": "hold", "champion": "lead-v21", "reason": "No challenger passed every gate. Champion holds. lead-v28 failed beats_champion, calibration; lead-v29 failed beats_champion, brier, calibration; lead-v30 failed beats_champion, calibration", "summary": "Lead cycle 2026-09: monitor status action. Findings: Search keyword input drift PSI 0.83 (action); Lead source input drift PSI 0.16 (watch); AUC down 0.025 vs promotion baseline (watch). Builder tried recalibrate, finetune, retrain. Held lead-v21. No challenger passed every gate. Champion holds. lead-v28 failed beats_champion, calibration; lead-v29 failed beats_champion, brier, calibration; lead-v30 failed beats_champion, calibration. Scored 1203 records with lead-v21 and updated the CRM.", "scored": 1203, "tiers": {"A": 214, "B": 400, "C": 334, "D": 255}}], "registry": [{"version": "lead-v1", "status": "retired", "method": "bootstrap", "train_window": "2025-01..2025-04", "holdout": "2025-06", "auc": 0.7584, "approved_by": "bootstrap", "notes": "Initial champion trained on the bootstrap window."}, {"version": "lead-v2", "status": "rejected", "method": "retrain", "train_window": "2025-01..2025-05", "holdout": "2025-06", "auc": 0.7617, "approved_by": "", "notes": "Full retrain on 2025-01..2025-05 with a 3-period recency half-life."}, {"version": "lead-v3", "status": "rejected", "method": "retrain", "train_window": "2025-01..2025-06", "holdout": "2025-07", "auc": 0.7642, "approved_by": "", "notes": "Full retrain on 2025-01..2025-06 with a 3-period recency half-life."}, {"version": "lead-v4", "status": "rejected", "method": "retrain", "train_window": "2025-02..2025-07", "holdout": "2025-08", "auc": 0.7212, "approved_by": "", "notes": "Full retrain on 2025-02..2025-07 with a 3-period recency half-life."}, {"version": "lead-v5", "status": "rejected", "method": "retrain", "train_window": "2025-03..2025-08", "holdout": "2025-09", "auc": 0.7759, "approved_by": "", "notes": "Full retrain on 2025-03..2025-08 with a 3-period recency half-life."}, {"version": "lead-v6", "status": "rejected", "method": "finetune", "train_window": "2025-08..2025-09", "holdout": "2025-10", "auc": 0.7482, "approved_by": "", "notes": "Warm start: lead-v1 plus 80 trees fitted on 2025-08, 2025-09. Encoder frozen, so new categories stay unknown."}, {"version": "lead-v7", "status": "rejected", "method": "retrain", "train_window": "2025-04..2025-09", "holdout": "2025-10", "auc": 0.7679, "approved_by": "", "notes": "Full retrain on 2025-04..2025-09 with a 3-period recency half-life."}, {"version": "lead-v8", "status": "rejected", "method": "recalibrate", "train_window": "2025-01..2025-04", "holdout": "2025-11", "auc": 0.6704, "approved_by": "", "notes": "Refit calibration on 2025-10. Trees unchanged."}, {"version": "lead-v9", "status": "rejected", "method": "finetune", "train_window": "2025-09..2025-10", "holdout": "2025-11", "auc": 0.6914, "approved_by": "", "notes": "Warm start: lead-v1 plus 80 trees fitted on 2025-09, 2025-10. Encoder frozen, so new categories stay unknown."}, {"version": "lead-v10", "status": "rejected", "method": "retrain", "train_window": "2025-05..2025-10", "holdout": "2025-11", "auc": 0.7073, "approved_by": "", "notes": "Full retrain on 2025-05..2025-10 with a 3-period recency half-life."}, {"version": "lead-v11", "status": "rejected", "method": "recalibrate", "train_window": "2025-01..2025-04", "holdout": "2025-12", "auc": 0.699, "approved_by": "", "notes": "Refit calibration on 2025-11. Trees unchanged."}, {"version": "lead-v12", "status": "rejected", "method": "finetune", "train_window": "2025-10..2025-11", "holdout": "2025-12", "auc": 0.7517, "approved_by": "", "notes": "Warm start: lead-v1 plus 80 trees fitted on 2025-10, 2025-11. Encoder frozen, so new categories stay unknown."}, {"version": "lead-v13", "status": "retired", "method": "retrain", "train_window": "2025-06..2025-11", "holdout": "2025-12", "auc": 0.7631, "approved_by": "RevOps (simulated)", "notes": "lead-v13 (retrain) passed all gates. AUC 0.763 vs champion 0.699 on 2025-12."}, {"version": "lead-v14", "status": "rejected", "method": "retrain", "train_window": "2025-07..2025-12", "holdout": "2026-01", "auc": 0.7556, "approved_by": "", "notes": "Full retrain on 2025-07..2025-12 with a 3-period recency half-life."}, {"version": "lead-v15", "status": "rejected", "method": "finetune", "train_window": "2025-12..2026-01", "holdout": "2026-02", "auc": 0.7157, "approved_by": "", "notes": "Warm start: lead-v13 plus 80 trees fitted on 2025-12, 2026-01. Encoder frozen, so new categories stay unknown."}, {"version": "lead-v16", "status": "retired", "method": "retrain", "train_window": "2025-08..2026-01", "holdout": "2026-02", "auc": 0.7535, "approved_by": "RevOps (simulated)", "notes": "lead-v16 (retrain) passed all gates. AUC 0.753 vs champion 0.740 on 2026-02."}, {"version": "lead-v17", "status": "rejected", "method": "finetune", "train_window": "2026-01..2026-02", "holdout": "2026-03", "auc": 0.7319, "approved_by": "", "notes": "Warm start: lead-v16 plus 80 trees fitted on 2026-01, 2026-02. Encoder frozen, so new categories stay unknown."}, {"version": "lead-v18", "status": "rejected", "method": "retrain", "train_window": "2025-09..2026-02", "holdout": "2026-03", "auc": 0.7514, "approved_by": "", "notes": "Full retrain on 2025-09..2026-02 with a 3-period recency half-life."}, {"version": "lead-v19", "status": "rejected", "method": "recalibrate", "train_window": "2025-08..2026-01", "holdout": "2026-04", "auc": 0.7524, "approved_by": "", "notes": "Refit calibration on 2026-03. Trees unchanged."}, {"version": "lead-v20", "status": "rejected", "method": "finetune", "train_window": "2026-02..2026-03", "holdout": "2026-04", "auc": 0.7466, "approved_by": "", "notes": "Warm start: lead-v16 plus 80 trees fitted on 2026-02, 2026-03. Encoder frozen, so new categories stay unknown."}, {"version": "lead-v21", "status": "champion", "method": "retrain", "train_window": "2025-10..2026-03", "holdout": "2026-04", "auc": 0.7651, "approved_by": "RevOps (simulated)", "notes": "lead-v21 (retrain) passed all gates. AUC 0.765 vs champion 0.752 on 2026-04."}, {"version": "lead-v22", "status": "rejected", "method": "finetune", "train_window": "2026-03..2026-04", "holdout": "2026-05", "auc": 0.7079, "approved_by": "", "notes": "Warm start: lead-v21 plus 80 trees fitted on 2026-03, 2026-04. Encoder frozen, so new categories stay unknown."}, {"version": "lead-v23", "status": "rejected", "method": "retrain", "train_window": "2025-11..2026-04", "holdout": "2026-05", "auc": 0.7029, "approved_by": "", "notes": "Full retrain on 2025-11..2026-04 with a 3-period recency half-life."}, {"version": "lead-v24", "status": "rejected", "method": "finetune", "train_window": "2026-04..2026-05", "holdout": "2026-06", "auc": 0.683, "approved_by": "", "notes": "Warm start: lead-v21 plus 80 trees fitted on 2026-04, 2026-05. Encoder frozen, so new categories stay unknown."}, {"version": "lead-v25", "status": "rejected", "method": "retrain", "train_window": "2025-12..2026-05", "holdout": "2026-06", "auc": 0.7027, "approved_by": "", "notes": "Full retrain on 2025-12..2026-05 with a 3-period recency half-life."}, {"version": "lead-v26", "status": "rejected", "method": "finetune", "train_window": "2026-05..2026-06", "holdout": "2026-07", "auc": 0.7231, "approved_by": "", "notes": "Warm start: lead-v21 plus 80 trees fitted on 2026-05, 2026-06. Encoder frozen, so new categories stay unknown."}, {"version": "lead-v27", "status": "rejected", "method": "retrain", "train_window": "2026-01..2026-06", "holdout": "2026-07", "auc": 0.7342, "approved_by": "", "notes": "Full retrain on 2026-01..2026-06 with a 3-period recency half-life."}, {"version": "lead-v28", "status": "rejected", "method": "recalibrate", "train_window": "2025-10..2026-03", "holdout": "2026-08", "auc": 0.74, "approved_by": "", "notes": "Refit calibration on 2026-07. Trees unchanged."}, {"version": "lead-v29", "status": "rejected", "method": "finetune", "train_window": "2026-06..2026-07", "holdout": "2026-08", "auc": 0.7253, "approved_by": "", "notes": "Warm start: lead-v21 plus 80 trees fitted on 2026-06, 2026-07. Encoder frozen, so new categories stay unknown."}, {"version": "lead-v30", "status": "rejected", "method": "retrain", "train_window": "2026-02..2026-07", "holdout": "2026-08", "auc": 0.738, "approved_by": "", "notes": "Full retrain on 2026-02..2026-07 with a 3-period recency half-life."}], "champion": "lead-v21", "last": {"managed": 0.74, "frozen": 0.6892, "rules": 0.6314, "period": "2026-09"}, "counts": {"cycles": 15, "promotions": 3, "holds": 12}}, "account": {"label": "Account expansion (next quarter)", "cadence": "quarterly", "quality": [{"period": "2025Q1", "managed": 0.8276, "frozen": 0.8276, "rules": 0.734, "champion": "account-v1"}, {"period": "2025Q2", "managed": 0.836, "frozen": 0.836, "rules": 0.729, "champion": "account-v1"}, {"period": "2025Q3", "managed": 0.8465, "frozen": 0.8465, "rules": 0.7379, "champion": "account-v1"}, {"period": "2025Q4", "managed": 0.7798, "frozen": 0.7798, "rules": 0.7014, "champion": "account-v5"}, {"period": "2026Q1", "managed": 0.774, "frozen": 0.774, "rules": 0.6869, "champion": "account-v5"}, {"period": "2026Q2", "managed": 0.8118, "frozen": 0.7732, "rules": 0.6835, "champion": "account-v9"}], "promotions": [{"cycle": "2025Q4", "version": "account-v5", "method": "recalibrate"}, {"cycle": "2026Q2", "version": "account-v9", "method": "finetune"}, {"cycle": "2026Q3", "version": "account-v12", "method": "retrain"}], "drift": {"periods": ["2025Q2", "2025Q3", "2025Q4", "2026Q1", "2026Q2", "2026Q3"], "features": [{"key": "industry", "label": "Industry"}, {"key": "employees", "label": "Employees"}, {"key": "revenue", "label": "Revenue"}, {"key": "sales", "label": "Sales"}, {"key": "profit", "label": "Profit"}], "values": [[0.0002, 0.0004, 0.0006, 0.1903, 0.3751, 0.5709], [0.0093, 0.0156, 0.0201, 0.0271, 0.0348, 0.0064], [0.001, 0.0028, 0.0047, 0.0041, 0.0271, 0.0284], [0.0026, 0.0033, 0.0039, 0.0032, 0.0232, 0.0256], [0.004, 0.0045, 0.0043, 0.0042, 0.0164, 0.0187]]}, "timeline": [{"period": "2025Q2", "status": "watch", "findings": ["Calibration gap -2.7 points (watch)"], "plan": ["Scheduled quarterly rebuild: always build a full-retrain challenger.", "Calibration gap found: try the cheapest fix, a recalibration."], "challengers": [{"version": "account-v2", "method": "recalibrate", "auc": 0.8276, "passed": false, "tier_churn": 0.022222222222222223, "unknown_category_share": 0, "failed_gates": ["calibration"]}, {"version": "account-v3", "method": "retrain", "auc": 0.8279, "passed": false, "tier_churn": 0.14296296296296296, "unknown_category_share": 0, "failed_gates": ["calibration"]}], "decision": "hold", "champion": "account-v1", "reason": "No challenger passed every gate. Champion holds. account-v2 failed calibration; account-v3 failed calibration", "summary": "Account cycle 2025Q2: monitor status watch. Findings: Calibration gap -2.7 points (watch). Builder tried recalibrate, retrain. Held account-v1. No challenger passed every gate. Champion holds. account-v2 failed calibration; account-v3 failed calibration. Scored 2700 records with account-v1 and updated the CRM.", "scored": 2700, "tiers": {"A": 411, "B": 727, "C": 782, "D": 780}}, {"period": "2025Q3", "status": "healthy", "findings": ["No material drift. Champion is healthy."], "plan": ["Scheduled quarterly rebuild: always build a full-retrain challenger."], "challengers": [{"version": "account-v4", "method": "retrain", "auc": 0.8367, "passed": false, "tier_churn": 0.20543478260869566, "unknown_category_share": 0, "failed_gates": ["beats_champion"]}], "decision": "hold", "champion": "account-v1", "reason": "No challenger passed every gate. Champion holds. account-v4 failed beats_champion", "summary": "Account cycle 2025Q3: monitor status healthy. Builder tried retrain. Held account-v1. No challenger passed every gate. Champion holds. account-v4 failed beats_champion. Scored 2760 records with account-v1 and updated the CRM.", "scored": 2760, "tiers": {"A": 416, "B": 690, "C": 809, "D": 845}}, {"period": "2025Q4", "status": "watch", "findings": ["Calibration gap -2.9 points (watch)"], "plan": ["Scheduled quarterly rebuild: always build a full-retrain challenger.", "Calibration gap found: try the cheapest fix, a recalibration."], "challengers": [{"version": "account-v5", "method": "recalibrate", "auc": 0.8465, "passed": true, "tier_churn": 0.035106382978723406, "unknown_category_share": 0, "failed_gates": []}, {"version": "account-v6", "method": "retrain", "auc": 0.8495, "passed": true, "tier_churn": 0.23439716312056738, "unknown_category_share": 0, "failed_gates": []}], "decision": "promote", "champion": "account-v5", "reason": "account-v5 (recalibrate) passed all gates. AUC 0.847 vs champion 0.847 on 2025Q3. Chosen as the cheapest update within tolerance of the best.", "summary": "Account cycle 2025Q4: monitor status watch. Findings: Calibration gap -2.9 points (watch). Builder tried recalibrate, retrain. Promoted account-v5 over account-v1. account-v5 (recalibrate) passed all gates. AUC 0.847 vs champion 0.847 on 2025Q3. Chosen as the cheapest update within tolerance of the best. Scored 2820 records with account-v5 and updated the CRM.", "scored": 2820, "tiers": {"A": 395, "B": 701, "C": 898, "D": 826}}, {"period": "2026Q1", "status": "action", "findings": ["Industry input drift PSI 0.19 (watch)", "New industry values the champion has never seen: Public Sector (3% of records)", "AUC down 0.067 vs promotion baseline on 2025Q4 outcomes"], "plan": ["Scheduled quarterly rebuild: always build a full-retrain challenger.", "New industry values Public Sector have no outcomes yet. The champion treats them as unknown until labels land; no update path can learn them this cycle.", "Performance or input drift: try a warm-start fine-tune on the latest labeled data."], "challengers": [{"version": "account-v7", "method": "finetune", "auc": 0.7783, "passed": false, "tier_churn": 0.1606060606060606, "unknown_category_share": 0.0327, "failed_gates": ["beats_champion", "brier"]}, {"version": "account-v8", "method": "retrain", "auc": 0.775, "passed": false, "tier_churn": 0.2542087542087542, "unknown_category_share": 0.0327, "failed_gates": ["beats_champion", "brier"]}], "decision": "hold", "champion": "account-v5", "reason": "No challenger passed every gate. Champion holds. account-v7 failed beats_champion, brier; account-v8 failed beats_champion, brier", "summary": "Account cycle 2026Q1: monitor status action. Findings: Industry input drift PSI 0.19 (watch); New industry values the champion has never seen: Public Sector (3% of records); AUC down 0.067 vs promotion baseline on 2025Q4 outcomes. Builder tried finetune, retrain. Held account-v5. No challenger passed every gate. Champion holds. account-v7 failed beats_champion, brier; account-v8 failed beats_champion, brier. Scored 2970 records with account-v5 and updated the CRM.", "scored": 2970, "tiers": {"A": 418, "B": 776, "C": 917, "D": 859}}, {"period": "2026Q2", "status": "action", "findings": ["Industry input drift PSI 0.38 (action)", "New industry values the champion has never seen: Public Sector (6% of records)", "AUC down 0.072 vs promotion baseline on 2026Q1 outcomes"], "plan": ["Scheduled quarterly rebuild: always build a full-retrain challenger.", "New industry values Public Sector have no outcomes yet. The champion treats them as unknown until labels land; no update path can learn them this cycle.", "Performance or input drift: try a warm-start fine-tune on the latest labeled data."], "challengers": [{"version": "account-v9", "method": "finetune", "auc": 0.8123, "passed": true, "tier_churn": 0.2387820512820513, "unknown_category_share": 0.0583, "failed_gates": []}, {"version": "account-v10", "method": "retrain", "auc": 0.7989, "passed": true, "tier_churn": 0.2692307692307692, "unknown_category_share": 0.0583, "failed_gates": []}], "decision": "promote", "champion": "account-v9", "reason": "account-v9 (finetune) passed all gates. AUC 0.812 vs champion 0.774 on 2026Q1.", "summary": "Account cycle 2026Q2: monitor status action. Findings: Industry input drift PSI 0.38 (action); New industry values the champion has never seen: Public Sector (6% of records); AUC down 0.072 vs promotion baseline on 2026Q1 outcomes. Builder tried finetune, retrain. Promoted account-v9 over account-v5. account-v9 (finetune) passed all gates. AUC 0.812 vs champion 0.774 on 2026Q1. Scored 3120 records with account-v9 and updated the CRM.", "scored": 3120, "tiers": {"A": 536, "B": 759, "C": 921, "D": 904}}, {"period": "2026Q3", "status": "action", "findings": ["Industry input drift PSI 0.57 (action)", "New industry values the champion has never seen: Public Sector (8% of records)"], "plan": ["Scheduled quarterly rebuild: always build a full-retrain challenger.", "New industry values Public Sector now have outcomes in the training window. Only a full retrain can learn them.", "Performance or input drift: try a warm-start fine-tune on the latest labeled data."], "challengers": [{"version": "account-v11", "method": "finetune", "auc": 0.8336, "passed": true, "tier_churn": 0.2837920489296636, "unknown_category_share": 0.0838, "failed_gates": []}, {"version": "account-v12", "method": "retrain", "auc": 0.8335, "passed": true, "tier_churn": 0.27217125382262997, "unknown_category_share": 0, "failed_gates": []}], "decision": "promote", "champion": "account-v12", "reason": "account-v12 (retrain) passed all gates. AUC 0.834 vs champion 0.812 on 2026Q2. Chosen over cheaper finetune because it knows categories that cover 100% of current records.", "summary": "Account cycle 2026Q3: monitor status action. Findings: Industry input drift PSI 0.57 (action); New industry values the champion has never seen: Public Sector (8% of records). Builder tried finetune, retrain. Promoted account-v12 over account-v9. account-v12 (retrain) passed all gates. AUC 0.834 vs champion 0.812 on 2026Q2. Chosen over cheaper finetune because it knows categories that cover 100% of current records. Scored 3270 records with account-v12 and updated the CRM.", "scored": 3270, "tiers": {"A": 492, "B": 844, "C": 986, "D": 948}}], "registry": [{"version": "account-v1", "status": "retired", "method": "bootstrap", "train_window": "2024Q1..2024Q3", "holdout": "2025Q1", "auc": 0.8276, "approved_by": "bootstrap", "notes": "Initial champion trained on the bootstrap window."}, {"version": "account-v2", "status": "rejected", "method": "recalibrate", "train_window": "2024Q1..2024Q3", "holdout": "2025Q1", "auc": 0.8276, "approved_by": "", "notes": "Refit calibration on 2024Q4. Trees unchanged."}, {"version": "account-v3", "status": "rejected", "method": "retrain", "train_window": "2024Q1..2024Q4", "holdout": "2025Q1", "auc": 0.8279, "approved_by": "", "notes": "Full retrain on 2024Q1..2024Q4 with a 2-period recency half-life."}, {"version": "account-v4", "status": "rejected", "method": "retrain", "train_window": "2024Q2..2025Q1", "holdout": "2025Q2", "auc": 0.8367, "approved_by": "", "notes": "Full retrain on 2024Q2..2025Q1 with a 2-period recency half-life."}, {"version": "account-v5", "status": "retired", "method": "recalibrate", "train_window": "2024Q1..2024Q3", "holdout": "2025Q3", "auc": 0.8465, "approved_by": "RevOps (simulated)", "notes": "account-v5 (recalibrate) passed all gates. AUC 0.847 vs champion 0.847 on 2025Q3. Chosen as the cheapest update within tolerance of the best."}, {"version": "account-v6", "status": "rejected", "method": "retrain", "train_window": "2024Q3..2025Q2", "holdout": "2025Q3", "auc": 0.8495, "approved_by": "", "notes": "Full retrain on 2024Q3..2025Q2 with a 2-period recency half-life."}, {"version": "account-v7", "status": "rejected", "method": "finetune", "train_window": "2025Q2..2025Q3", "holdout": "2025Q4", "auc": 0.7783, "approved_by": "", "notes": "Warm start: account-v5 plus 80 trees fitted on 2025Q2, 2025Q3. Encoder frozen, so new categories stay unknown."}, {"version": "account-v8", "status": "rejected", "method": "retrain", "train_window": "2024Q4..2025Q3", "holdout": "2025Q4", "auc": 0.775, "approved_by": "", "notes": "Full retrain on 2024Q4..2025Q3 with a 2-period recency half-life."}, {"version": "account-v9", "status": "retired", "method": "finetune", "train_window": "2025Q3..2025Q4", "holdout": "2026Q1", "auc": 0.8123, "approved_by": "RevOps (simulated)", "notes": "account-v9 (finetune) passed all gates. AUC 0.812 vs champion 0.774 on 2026Q1."}, {"version": "account-v10", "status": "rejected", "method": "retrain", "train_window": "2025Q1..2025Q4", "holdout": "2026Q1", "auc": 0.7989, "approved_by": "", "notes": "Full retrain on 2025Q1..2025Q4 with a 2-period recency half-life."}, {"version": "account-v11", "status": "rejected", "method": "finetune", "train_window": "2025Q4..2026Q1", "holdout": "2026Q2", "auc": 0.8336, "approved_by": "", "notes": "Warm start: account-v9 plus 80 trees fitted on 2025Q4, 2026Q1. Encoder frozen, so new categories stay unknown."}, {"version": "account-v12", "status": "champion", "method": "retrain", "train_window": "2025Q2..2026Q1", "holdout": "2026Q2", "auc": 0.8335, "approved_by": "RevOps (simulated)", "notes": "account-v12 (retrain) passed all gates. AUC 0.834 vs champion 0.812 on 2026Q2. Chosen over cheaper finetune because it knows categories that cover 100% of current records."}], "champion": "account-v12", "last": {"managed": 0.8118, "frozen": 0.7732, "rules": 0.6835, "period": "2026Q3"}, "counts": {"cycles": 6, "promotions": 3, "holds": 3}}}};
+const SERIES = [
+  { key: "managed", label: "Managed champion", color: "--series-1" },
+  { key: "frozen", label: "Frozen first model", color: "--series-2" },
+  { key: "rules", label: "v0 rules (original notebook)", color: "--series-3" },
+];
+const METHOD = { bootstrap: "bootstrap", recalibrate: "recalibration", finetune: "warm-start fine-tune", retrain: "full retrain" };
+const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const el = (tag, attrs = {}, text) => {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+  if (text !== undefined) n.textContent = text;
+  return n;
+};
+const svgEl = (tag, attrs = {}) => {
+  const n = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+  return n;
+};
+const fmt = (v, d = 3) => (v === null || v === undefined ? "n/a" : Number(v).toFixed(d));
+const tip = document.getElementById("tip");
+function showTip(x, y, build) {
+  tip.replaceChildren();
+  build(tip);
+  tip.style.display = "block";
+  const r = tip.getBoundingClientRect();
+  let left = x + 14, top = y + 14;
+  if (left + r.width > window.innerWidth - 8) left = x - r.width - 14;
+  if (top + r.height > window.innerHeight - 8) top = y - r.height - 14;
+  left = Math.max(8, Math.min(left, window.innerWidth - r.width - 8));
+  top = Math.max(8, top);
+  tip.style.left = left + "px"; tip.style.top = top + "px";
+}
+const hideTip = () => { tip.style.display = "none"; };
+
+// ------------------------------------------------------------------ tiles
+function tiles() {
+  const box = document.getElementById("tiles");
+  for (const [obj, d] of Object.entries(DATA.objects)) {
+    const t = el("div", { class: "card tile" });
+    t.append(el("div", { class: "label" }, (obj === "lead" ? "Lead" : "Account") + " champion"));
+    t.append(el("div", { class: "value" }, d.champion));
+    const gain = d.last.managed - d.last.frozen;
+    const delta = el("div", { class: "delta" });
+    const b = el("b", {}, (gain >= 0 ? "+" : "") + gain.toFixed(3) + " AUC");
+    delta.append(b, document.createTextNode(" vs frozen first model, latest outcomes"));
+    t.append(delta);
+    box.append(t);
+    const t2 = el("div", { class: "card tile" });
+    t2.append(el("div", { class: "label" }, (obj === "lead" ? "Lead" : "Account") + " cycles"));
+    t2.append(el("div", { class: "value" }, `${d.counts.promotions} promoted · ${d.counts.holds} held`));
+    t2.append(el("div", { class: "delta" }, `${d.counts.cycles} ${d.cadence} cycles replayed`));
+    box.append(t2);
+  }
+}
+
+// ------------------------------------------------------------------ line chart
+function lineChart(host, d) {
+  const q = d.quality;
+  const draw = () => {
+    host.replaceChildren();
+    const W = Math.max(host.clientWidth, 320), H = 280;
+    const narrow = W < 560;  // phones: legend and tooltip carry identity, no end labels
+    const m = { t: 12, r: narrow ? 16 : 150, b: 34, l: 44 };
+    const iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const vals = q.flatMap((r) => SERIES.map((s) => r[s.key])).filter((v) => v !== null);
+    const lo = Math.floor((Math.min(...vals) - 0.01) * 20) / 20, hi = Math.ceil((Math.max(...vals) + 0.01) * 20) / 20;
+    const x = (i) => m.l + (q.length === 1 ? iw / 2 : (i * iw) / (q.length - 1));
+    const y = (v) => m.t + ih - ((v - lo) / (hi - lo)) * ih;
+    const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": `${d.label}: model AUC over time` });
+    for (let v = lo; v <= hi + 1e-9; v += 0.05) {
+      svg.append(svgEl("line", { x1: m.l, x2: m.l + iw, y1: y(v), y2: y(v), stroke: css("--grid"), "stroke-width": 1 }));
+      const t = svgEl("text", { x: m.l - 8, y: y(v) + 4, "text-anchor": "end", "font-size": 11, fill: css("--text-muted") });
+      t.textContent = v.toFixed(2);
+      svg.append(t);
+    }
+    const step = Math.ceil(q.length / Math.max(2, Math.floor(iw / 72)));
+    q.forEach((r, i) => {
+      if (i % step && i !== q.length - 1) return;
+      const t = svgEl("text", { x: x(i), y: H - 10, "text-anchor": "middle", "font-size": 11, fill: css("--text-muted") });
+      t.textContent = r.period;
+      svg.append(t);
+    });
+    svg.append(svgEl("line", { x1: m.l, x2: m.l + iw, y1: m.t + ih, y2: m.t + ih, stroke: css("--axis"), "stroke-width": 1 }));
+    const ends = [];
+    for (const s of [...SERIES].reverse()) {  // managed champion drawn last, on top
+      const pts = q.map((r, i) => (r[s.key] === null ? null : [x(i), y(r[s.key])])).filter(Boolean);
+      svg.append(svgEl("path", { d: "M" + pts.map((p) => p.join(",")).join("L"), fill: "none", stroke: css(s.color),
+        "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }));
+      const last = pts[pts.length - 1];
+      ends.push({ s, x: last[0], y: last[1], v: q[q.length - 1][s.key] });
+    }
+    // Promotion markers on the managed line: first outcomes scored by the new champion.
+    const promoAt = new Map(d.promotions.map((p) => [p.cycle, p]));
+    q.forEach((r, i) => {
+      if (promoAt.has(r.period) && r.managed !== null) {
+        svg.append(svgEl("circle", { cx: x(i), cy: y(r.managed), r: 5, fill: css("--series-1"), stroke: css("--surface-1"), "stroke-width": 2 }));
+      }
+    });
+    // End labels with leader lines, spaced so they never overlap.
+    ends.sort((a, b) => a.y - b.y);
+    let prev = -Infinity;
+    for (const e of narrow ? [] : ends) {
+      const ly = Math.max(e.y, prev + 16);
+      prev = ly;
+      svg.append(svgEl("line", { x1: e.x + 4, y1: e.y, x2: e.x + 14, y2: ly, stroke: css("--axis"), "stroke-width": 1 }));
+      const t = svgEl("text", { x: e.x + 18, y: ly + 4, "font-size": 12, fill: css("--text-secondary") });
+      t.textContent = `${fmt(e.v)} ${e.s.label.split(" (")[0]}`;
+      svg.append(t);
+    }
+    const cross = svgEl("line", { y1: m.t, y2: m.t + ih, stroke: css("--axis"), "stroke-width": 1, visibility: "hidden" });
+    svg.append(cross);
+    const hit = svgEl("rect", { x: m.l - 10, y: m.t, width: iw + 20, height: ih, fill: "transparent", tabindex: 0 });
+    const at = (i, cx, cy) => {
+      const r = q[i];
+      cross.setAttribute("x1", x(i)); cross.setAttribute("x2", x(i)); cross.setAttribute("visibility", "visible");
+      showTip(cx, cy, (box) => {
+        box.append(el("div", { class: "t-head" }, `Outcomes of ${r.period}`));
+        for (const s of SERIES) {
+          const row = el("div", { class: "t-row" });
+          const key = el("i"); key.style.background = css(s.color);
+          row.append(key, el("b", {}, fmt(r[s.key])), el("span", {}, s.label));
+          box.append(row);
+        }
+        box.append(el("div", { class: "t-note" }, `Scored live by ${r.champion}`));
+        const p = promoAt.get(r.period);
+        if (p) box.append(el("div", { class: "t-note" }, `New champion this month: ${p.version} (${METHOD[p.method] || p.method})`));
+      });
+    };
+    hit.addEventListener("pointermove", (ev) => {
+      const rect = svg.getBoundingClientRect();
+      const px = ((ev.clientX - rect.left) / rect.width) * W;
+      const i = Math.max(0, Math.min(q.length - 1, Math.round(((px - m.l) / iw) * (q.length - 1))));
+      at(i, ev.clientX, ev.clientY);
+    });
+    hit.addEventListener("pointerleave", () => { cross.setAttribute("visibility", "hidden"); hideTip(); });
+    let kIdx = q.length - 1;
+    hit.addEventListener("focus", () => { const r = hit.getBoundingClientRect(); at(kIdx, r.left + r.width / 2, r.top); });
+    hit.addEventListener("keydown", (ev) => {
+      if (ev.key !== "ArrowLeft" && ev.key !== "ArrowRight") return;
+      kIdx = Math.max(0, Math.min(q.length - 1, kIdx + (ev.key === "ArrowRight" ? 1 : -1)));
+      const r = hit.getBoundingClientRect(); at(kIdx, r.left + (kIdx / (q.length - 1)) * r.width, r.top);
+    });
+    hit.addEventListener("blur", () => { cross.setAttribute("visibility", "hidden"); hideTip(); });
+    svg.append(hit);
+    host.append(svg);
+  };
+  draw();
+  new ResizeObserver(() => draw()).observe(host);
+}
+
+function legend() {
+  const lg = el("div", { class: "legend" });
+  for (const s of SERIES) {
+    const item = el("span"); const i = el("i"); i.style.background = `var(${s.color})`;
+    item.append(i, document.createTextNode(s.label)); lg.append(item);
+  }
+  const item = el("span"); const i = el("i", { class: "dot" }); i.style.background = "var(--series-1)";
+  item.append(i, document.createTextNode("New champion takes over")); lg.append(item);
+  return lg;
+}
+
+function qualityTable(d) {
+  const det = el("details"); det.append(el("summary", {}, "Table view"));
+  const t = el("table");
+  const hr = el("tr");
+  ["Outcome period", "Live champion", ...SERIES.map((s) => s.label)].forEach((h, i) => hr.append(el("th", i > 1 ? { class: "num" } : {}, h)));
+  t.append(hr);
+  for (const r of d.quality) {
+    const tr = el("tr");
+    tr.append(el("td", {}, r.period), el("td", {}, r.champion));
+    for (const s of SERIES) tr.append(el("td", { class: "num" }, fmt(r[s.key])));
+    t.append(tr);
+  }
+  det.append(t); return det;
+}
+
+// ------------------------------------------------------------------ drift grid
+function driftGrid(d) {
+  const wrap = el("div", { class: "grid-wrap" });
+  const t = el("table", { class: "heat" });
+  const hr = el("tr"); hr.append(el("th", {}, "Feature"));
+  d.drift.periods.forEach((p) => hr.append(el("th", { class: "rot" }, p)));
+  t.append(hr);
+  d.drift.features.forEach((f, fi) => {
+    const tr = el("tr"); tr.append(el("td", {}, f.label));
+    d.drift.values[fi].forEach((v, pi) => {
+      const band = v === null ? "" : v >= 0.25 ? "action" : v >= 0.10 ? "watch" : "";
+      const td = el("td", { class: `cell ${band}`, tabindex: 0 }, v === null ? "" : v.toFixed(2));
+      const tell = (cx, cy) => showTip(cx, cy, (box) => {
+        box.append(el("div", { class: "t-head" }, `${f.label}, ${d.drift.periods[pi]}`));
+        const row = el("div", { class: "t-row" });
+        row.append(el("b", {}, fmt(v, 2)), el("span", {}, band ? `PSI, ${band} band` : "PSI, stable"));
+        box.append(row);
+      });
+      td.addEventListener("pointermove", (ev) => tell(ev.clientX, ev.clientY));
+      td.addEventListener("pointerleave", hideTip);
+      td.addEventListener("focus", () => { const r = td.getBoundingClientRect(); tell(r.right, r.top); });
+      td.addEventListener("blur", hideTip);
+      tr.append(td);
+    });
+    t.append(tr);
+  });
+  wrap.append(t);
+  const keys = el("div", { class: "keys" });
+  [["", "Stable, below 0.10"], ["watch", "Watch, 0.10 to 0.25"], ["action", "Action, 0.25 and up"]].forEach(([c, label]) => {
+    const s = el("span"); const i = el("i");
+    i.style.background = c ? `var(--${c}-fill)` : "var(--surface-1)";
+    s.append(i, document.createTextNode(label)); keys.append(s);
+  });
+  const box = el("div"); box.append(wrap, keys); return box;
+}
+
+// ------------------------------------------------------------------ timeline
+function timeline(d) {
+  const box = el("div");
+  for (const c of d.timeline) {
+    const row = el("div", { class: "cycle" });
+    const head = el("div", { class: "cycle-head" });
+    head.append(el("span", { class: "p" }, c.period), el("span", { class: `badge ${c.status}` }, c.status));
+    const decision = c.decision === "promote"
+      ? `Promoted ${c.champion}` : c.decision === "pending_approval" ? "Waiting for approval" : `Held ${c.champion}`;
+    head.append(el("span", { class: "decision" }, decision));
+    const tried = c.challengers.map((ch) => `${METHOD[ch.method] || ch.method} ${fmt(ch.auc)}${ch.passed ? "" : " (failed " + ch.failed_gates.join(", ") + ")"}`);
+    head.append(el("span", { class: "sub" }, "Tried: " + tried.join(" · ")));
+    row.append(head);
+    const det = el("details"); det.append(el("summary", {}, "Findings, plan and reasoning"));
+    const ul = el("ul");
+    c.findings.forEach((f) => ul.append(el("li", {}, f)));
+    c.plan.forEach((p) => ul.append(el("li", {}, p)));
+    ul.append(el("li", {}, c.reason));
+    det.append(ul);
+    row.append(det);
+    box.append(row);
+  }
+  return box;
+}
+
+function registryTable(d) {
+  const det = el("details"); det.append(el("summary", {}, `Model registry (${d.registry.length} versions)`));
+  const t = el("table");
+  const hr = el("tr");
+  ["Version", "Status", "Method", "Trained on", "Holdout", "Holdout AUC", "Approved by"].forEach((h, i) => hr.append(el("th", i === 5 ? { class: "num" } : {}, h)));
+  t.append(hr);
+  for (const r of d.registry) {
+    const tr = el("tr");
+    tr.append(el("td", {}, r.version), el("td", {}, r.status), el("td", {}, METHOD[r.method] || r.method),
+      el("td", {}, r.train_window), el("td", {}, r.holdout), el("td", { class: "num" }, fmt(r.auc)), el("td", {}, r.approved_by || ""));
+    t.append(tr);
+  }
+  det.append(t); return det;
+}
+
+function section(obj) {
+  const d = DATA.objects[obj];
+  if (!d) return;
+  const s = document.getElementById(obj);
+  s.append(el("h2", {}, obj === "lead" ? "Lead score: monthly rebuild" : "Account score: quarterly rescore"));
+  s.append(el("p", { class: "sub" }, `${d.label}. AUC of whichever model scored each period, measured once outcomes landed.`));
+  const card = el("div", { class: "card" });
+  card.append(legend());
+  const chart = el("div", { class: "chart" });
+  card.append(chart, qualityTable(d));
+  s.append(card);
+  lineChart(chart, d);
+  s.append(el("h3", {}, "Input drift the monitor saw (PSI against the champion's training data)"));
+  const c2 = el("div", { class: "card" }); c2.append(driftGrid(d)); s.append(c2);
+  s.append(el("h3", {}, "Every cycle, and why"));
+  const c3 = el("div", { class: "card" }); c3.append(timeline(d), registryTable(d)); s.append(c3);
+}
+
+tiles();
+section("lead");
+section("account");
+
+const themeBtn = document.getElementById("theme");
+themeBtn.addEventListener("click", () => {
+  const cur = document.documentElement.getAttribute("data-theme") ||
+    (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  document.documentElement.setAttribute("data-theme", cur === "dark" ? "light" : "dark");
+  document.querySelectorAll("section").forEach((s) => s.replaceChildren());
+  document.getElementById("tiles").replaceChildren();
+  tiles(); section("lead"); section("account");
+});
+</script>
+</body>
+</html>

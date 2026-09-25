@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Score_Model_Version__c</fullName>
+    <description>Model registry version that produced the score, for example lead-v23.</description>
+    <externalId>false</externalId>
+    <label>Score Model Version</label>
+    <length>40</length>
+    <required>false</required>
+    <type>Text</type>
+</CustomField>

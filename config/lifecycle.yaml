@@ -1,0 +1,68 @@
+# Lifecycle policy. The agents read this. Change policy here, not in code.
+
+objects:
+  lead:
+    cadence: monthly            # rebuild a challenger every month on the latest leads
+    label_lag: 1                # 30-day conversion: last month's leads are labeled at month end
+    train_periods: 5            # full labeled periods in a retrain, plus half of the newest one
+    finetune_periods: 1         # full periods used for warm-start, plus half of the newest one
+    calib_share: 0.5            # the newest labeled period before the holdout is split: half train, half calibration
+    recency_half_life: 3        # periods; newer data counts more in a retrain
+    bootstrap:
+      train: ["2025-01", "2025-04"]
+      calib: "2025-05"
+      holdout: "2025-06"
+    first_cycle: "2025-07"
+    last_cycle: "2026-09"
+  account:
+    cadence: quarterly          # rescore the whole book every quarter
+    label_lag: 1                # expansion is known one quarter later
+    train_periods: 3
+    finetune_periods: 1
+    calib_share: 0.5
+    recency_half_life: 2
+    bootstrap:
+      train: ["2024Q1", "2024Q3"]
+      calib: "2024Q4"
+      holdout: "2025Q1"
+    first_cycle: "2025Q2"
+    last_cycle: "2026Q3"
+
+monitor:
+  psi_watch: 0.10
+  psi_action: 0.25
+  unseen_share_action: 0.02     # new category above 2% of records forces a retrain
+  auc_drop_watch: 0.02
+  auc_drop_action: 0.04
+  calibration_gap_watch: 0.02   # 2 points of probability
+  calibration_gap_action: 0.035
+
+gates:
+  lead:
+    min_auc: 0.70
+    min_auc_gain: 0.01          # must beat the champion on the same out-of-time holdout...
+    max_brier_increase: 0.002   # ...unless the champion itself is failing a health gate
+    max_abs_calibration_gap: 0.03
+    min_top_decile_lift: 2.0
+    min_segment_auc: 0.60
+    segment_by: industry
+    segment_min_rows: 150
+    segment_min_positives: 15
+    max_tier_churn: null
+    require_human_approval: false   # monthly lead model promotes itself when gates pass
+    prefer_cheaper_within_auc: 0.005
+  account:
+    min_auc: 0.70
+    min_auc_gain: 0.01
+    max_brier_increase: 0.002
+    max_abs_calibration_gap: 0.025
+    min_top_decile_lift: 2.0
+    min_segment_auc: 0.60
+    segment_by: industry
+    segment_min_rows: 150
+    segment_min_positives: 15
+    max_tier_churn: 0.35            # tiers drive territories and coverage; limit churn
+    require_human_approval: true    # RevOps signs off on account model changes
+    prefer_cheaper_within_auc: 0.005
+
+methods_cost_order: [recalibrate, finetune, retrain]
