@@ -147,7 +147,8 @@ public with sharing class ConsumptionService {
             if (withCaseStudies) {
                 addCaseStudies(r);
             }
-            r.useCasesText = describeUseCases(r.useCases, true);
+            // Prices stay out of everything the agents and prompts read. Deal Desk owns pricing.
+            r.useCasesText = describeUseCases(r.useCases, false);
             if (r.snapshot != null) {
                 r.snapshot.Recommended_Use_Cases__c = AgentAuditLogger.clip(r.useCasesText, 32000);
             }

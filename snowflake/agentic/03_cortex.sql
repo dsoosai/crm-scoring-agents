@@ -78,6 +78,7 @@ SELECT PARSE_JSON(SNOWFLAKE.CORTEX.SEARCH_PREVIEW('AGENTIC_DEMO.GTM.CASE_STUDY_S
 SELECT AI_COMPLETE('claude-sonnet-4-6', 'In one sentence: why would a RevOps leader care about predictive lead scoring?');
 
 -- 3. A Cortex agent on Claude: Cortex Analyst over the semantic view plus Cortex Search.
+-- Re-running CREATE OR REPLACE drops the agent's grants. Run steps 4 and 5 again after it.
 CREATE OR REPLACE AGENT CONSUMPTION_ANALYST
   COMMENT = 'Answers consumption and use-case questions for account teams'
   PROFILE = '{"display_name": "Consumption Analyst"}'
@@ -86,7 +87,7 @@ CREATE OR REPLACE AGENT CONSUMPTION_ANALYST
   models:
     orchestration: claude-sonnet-4-6
   instructions:
-    response: "Answer in at most five sentences. Give numbers with units (credits, percent, dates). Name the source: telemetry or case studies. Never quote prices, discounts or contract terms."
+    response: "Answer in at most five sentences. The latest month is month to date: say so, and never call it a decline or a pullback. Give numbers with units (credits, percent, dates). Name the source: telemetry or case studies. Never quote prices, discounts or contract terms."
     orchestration: "Use Consumption for any question about credits, workloads, growth, contracts or adoption. Use CaseStudies for evidence from other customers. Answer only from tool results."
   tools:
     - tool_spec:

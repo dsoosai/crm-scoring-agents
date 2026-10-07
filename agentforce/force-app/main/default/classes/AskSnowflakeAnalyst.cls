@@ -26,6 +26,11 @@ public with sharing class AskSnowflakeAnalyst {
         public String source;
     }
 
+    /** Keeps the Cortex answer readable in a chat panel: no charts, and a partial month is not a decline. */
+    @TestVisible
+    private static final String ANSWER_STYLE = ' Answer in plain text without charts, tables or markdown, and list monthly figures inline.'
+        + ' The most recent month is month to date, so do not describe it as a decline.';
+
     @TestVisible
     private static final String FALLBACK_SQL =
         'SELECT TO_VARCHAR(DATE_TRUNC(\'month\', d.USAGE_DATE), \'YYYY-MM\') AS MONTH, d.WAREHOUSE_NAME, d.WORKLOAD, '
@@ -47,7 +52,7 @@ public with sharing class AskSnowflakeAnalyst {
                 .inputs(question).model(AgenticDemoConfig.CORTEX_MODEL);
             Response res = new Response();
             try {
-                SnowflakeClient.AgentAnswer a = SnowflakeClient.askAgent(question);
+                SnowflakeClient.AgentAnswer a = SnowflakeClient.askAgent(question + ANSWER_STYLE);
                 if (String.isBlank(a.text)) {
                     throw new SnowflakeClient.SnowflakeException('The Cortex agent returned no answer.');
                 }
