@@ -75,6 +75,7 @@ subagent troubleshooting:
                   4. If an article fits, give its steps in short numbered lines, cite the article Id and ask whether it fixed the problem.
                   5. If the customer confirms it is fixed, call {!@actions.log_resolved_case}.
                   6. Call {!@actions.open_case} when no article fits, the steps did not work, severity is Critical or the customer asks for a person.
+                     Set wantsPerson to True only if the customer used words like person, human, engineer or call. Steps that did not work are not a request for a person.
                      Summarize what was tried so the engineer does not ask again. Give the case number and where it was routed.
             | If the customer asks about pricing, renewal or contract terms, use {!@actions.to_account_team}.
               If they ask about an existing case, use {!@actions.to_case_status}.
@@ -195,7 +196,7 @@ subagent troubleshooting:
                 resolvedByAgent: boolean
                     description: "True when the customer confirmed the article fixed it"
                 wantsPerson: boolean
-                    description: "True when the customer asked for a person"
+                    description: "True only when the customer explicitly asked to talk to a person, an engineer or a human, or asked for a call. A failed fix alone is False."
                 agentSummary: string
                     description: "What was tried and why the case is handed off"
             outputs:

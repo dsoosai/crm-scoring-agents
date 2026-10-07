@@ -1,6 +1,6 @@
 [
   {
-    "title": "AE sales strategy: brief, telemetry, next play, outreach, guardrail, account plan (live org, Sep 25, 2026)",
+    "title": "AE sales strategy: brief, telemetry, warehouse drill-down, next play, outreach, guardrail, account plan (live org)",
     "agent": "Sales Strategy Assistant",
     "turns": [
       {
@@ -21,6 +21,14 @@
       },
       {
         "role": "user",
+        "text": "Which warehouse is driving Omega's AI growth, month by month?"
+      },
+      {
+        "role": "agent",
+        "text": "AI_WH is the warehouse driving Omega Inc.'s AI credit growth, month by month. Usage rose from 50.6 credits in March 2026 to 882.8 in August 2026, a 1645 percent increase. September is month-to-date. Source: Snowflake SQL API (governed fallback, Cortex agent unavailable).\n\nThe Snowflake Cortex agent is not available on this account right now, so this answer comes from one governed SQL statement over the same telemetry, through the SQL API.\nOmega Inc., AI (Cortex), credits by warehouse and month (2026-09 is month to date through 2026-09-24):\n- AI_WH (AI (Cortex)): 2026-03 50.6 | 2026-04 119.3 | 2026-05 196.2 | 2026-06 362.2 | 2026-07 627.0 | 2026-08 882.8 | 2026-09 812.5\nFinding: AI_WH drives the growth, from 50.6 credits in 2026-03 to 882.8 in 2026-08 (1645 percent).\n\nWould you like recommended next use cases, a draft outreach, or an account plan?"
+      },
+      {
+        "role": "user",
         "text": "What should I sell them next?"
       },
       {
@@ -33,7 +41,7 @@
       },
       {
         "role": "agent",
-        "text": "Here is a draft outreach email to Chris Post about predictive lead and account scoring:\n\nSubject: Predictive lead scoring for Omega's RevOps team\n\nHi Chris,\n\nThank you for the time at the QBR on September 10. You asked how peers score leads and forecast consumption, and you mentioned your team still routes leads manually.\n\nPredictive Lead and Account Scoring addresses this directly. Four peers in your industry run it live: Helix Software, Northwind Analytics, Pinecrest Labs and Quanta Systems. The typical outcome is pipeline conversion up 12 to 20 percent because reps work the right accounts first.\n\nNorthwind Analytics moved from hand-set rules to a gradient-boosted model on the data platform. CRM history and product usage sit in one place. Scores and the top three reasons write back to the CRM every night. Lead-to-opportunity conversion rose 18 percent within two quarters and reps stopped maintaining their own spreadsheets.\n\nThe workload combines your CRM history with product usage telemetry. Time to value runs about six weeks.\n\nCan we schedule a 30-minute working session to walk through the approach and build a plan for Omega? You can book directly here: [scheduling link].\n\nDaniel\n\nWould you like any changes to this draft, or should I save it for your review?"
+        "text": "Here is a draft for Chris Post about predictive lead scoring:\n\nSubject: Predictive lead scoring for Omega\n\nHi Chris,\n\nThank you for the time at the QBR on September 10. You mentioned your team still routes leads manually and asked how peers score leads and forecast consumption.\n\nPredictive Lead and Account Scoring addresses this directly. Four peers in your industry run it live: Helix Software, Northwind Analytics, Pinecrest Labs and Quanta Systems. Pipeline conversion typically increases 12 to 20 percent because reps work the right accounts first.\n\nNorthwind Analytics moved from hand-set rules to a model on the data platform. CRM history and product usage sit in one place. Scores and the top three reasons write back to the CRM every night. Lead-to-opportunity conversion rose 18 percent within two quarters and reps stopped maintaining their own spreadsheets.\n\nThe workload combines your CRM history with product usage telemetry. Time to value runs about six weeks.\n\nCan we schedule a 30-minute working session to walk through the approach and build a plan for Omega? You can book directly here: [scheduling link].\n\nDaniel\n\nWould you like any changes to this draft? If it looks good, I can save it for your review and sending."
       },
       {
         "role": "user",
@@ -41,7 +49,7 @@
       },
       {
         "role": "agent",
-        "text": "You're about to save this email draft for Chris Post. [Confirm] [Cancel]"
+        "text": "Contact Name: Chris Post. [Confirm] [Cancel]"
       },
       {
         "role": "user",
@@ -49,7 +57,7 @@
       },
       {
         "role": "agent",
-        "text": "The draft outreach email to Chris Post about predictive lead scoring is saved as a task for your review. You can edit or send it when ready. Would you like a brief on another account, consumption details, or help with account planning?"
+        "text": "The draft has been saved as a task for you to review and send to Chris Post. Would you like help with another use case, a different contact, or building an account plan for Omega Inc.?"
       },
       {
         "role": "user",
@@ -94,24 +102,16 @@
     ]
   },
   {
-    "title": "Support intake: verify, Snowflake knowledge, route by CRM tier, pricing guardrail (live org, Sep 25, 2026)",
+    "title": "Support intake, tier A customer: verify, Snowflake knowledge, Tier 2 by CRM tier, pricing guardrail (live org)",
     "agent": "Support Intake Agent",
     "turns": [
       {
         "role": "user",
-        "text": "Our finance dashboards hang for 20 minutes at month-end."
+        "text": "Our finance dashboards hang for 20 minutes at month-end. I am marcus.lee@omega-inc.example"
       },
       {
         "role": "agent",
-        "text": "Can you please provide your email address so I can verify your account before we continue troubleshooting?"
-      },
-      {
-        "role": "user",
-        "text": "marcus.lee@omega-inc.example"
-      },
-      {
-        "role": "agent",
-        "text": "I found steps that often resolve month-end dashboard slowdowns (KB-1018, KB-1001):\n\nSchedule heavy batch jobs outside business hours.\nGive finance dashboards their own multi-cluster warehouse.\nUse result caching for repeated reports.\nCheck if queries are queuing: if so, set the warehouse to multi-cluster (min 1, max 3-5 clusters, Standard scaling).\nSplit batch jobs onto a separate warehouse so dashboards are not blocked.\n\nDid these steps help, or are you still seeing delays? If you need more detail, I can give the exact setup steps."
+        "text": "Thanks, Marcus. For finance dashboards that hang at month-end, please try these steps from KB-1018 and KB-1001:\n\nSchedule batch jobs outside business hours if possible.\nGive finance dashboards their own multi-cluster warehouse.\nSet the warehouse to a minimum of 1 and a maximum of 3 to 5 clusters with the Standard scaling policy.\nUse result caching for repeated reports.\nSplit heavy batch jobs onto a separate warehouse so dashboards are not blocked.\nIf queries are still queuing, check the queued time in query history.\nConsider query acceleration for large scans.\n\nIf these steps fix the issue, let me know and I will log it as resolved. If not, tell me what you tried and I can open a case for deeper help."
       },
       {
         "role": "user",
@@ -119,7 +119,7 @@
       },
       {
         "role": "agent",
-        "text": "I opened case 00001031 and sent it to our Tier 2 engineers with a summary of what we tried, so you will not need to repeat yourself. They will review the query queueing and reach out soon.\n\nIs there any error text you see, or does it just hang? Would you like help with anything else while you wait?"
+        "text": "I opened case 00001035 and sent it straight to our Tier 2 engineers with a summary of what you tried, so you will not need to repeat yourself. They will follow up with you soon.\n\nWas there anything else about your finance dashboards or other systems you wanted to discuss today?"
       },
       {
         "role": "user",
@@ -128,6 +128,28 @@
       {
         "role": "agent",
         "text": "Pricing and contract questions are handled by your account team. I have sent your credits question to them, and they will reply soon.\n\nIs there anything else I can help with while you wait?"
+      }
+    ]
+  },
+  {
+    "title": "Support intake, tier D customer: same severity, routed to Tier 1 (live org)",
+    "agent": "Support Intake Agent",
+    "turns": [
+      {
+        "role": "user",
+        "text": "New users added to our identity provider group are not getting their role. I am jordan.patel@brightline.example"
+      },
+      {
+        "role": "agent",
+        "text": "Thanks for verifying, Jordan. Here are steps from KB-1003 to resolve new users not getting roles after being added to an identity provider group:\n\nConfirm your SCIM integration is active and its token has not expired.\nMake sure group-to-role mapping only applies to groups pushed by SCIM.\nPush the group again from your identity provider.\nAssign roles for SCIM-managed users in your identity provider, not manually in the platform.\n\nSupport cannot change user roles for you. Did these steps help resolve the issue?"
+      },
+      {
+        "role": "user",
+        "text": "That did not fix it. The SCIM integration is active and we pushed the group again."
+      },
+      {
+        "role": "agent",
+        "text": "Thanks for confirming you followed all the steps in KB-1003 and the issue is still happening. I have opened case 00001034 and routed it to Tier 1 Support. A support engineer will review what we tried and reach out with next steps.\n\nIs there any other detail about the impact or user experience you want included in the case? If not, you are all set and we will keep you updated."
       }
     ]
   }

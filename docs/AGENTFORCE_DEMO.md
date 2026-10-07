@@ -91,12 +91,12 @@ Open the Agentforce panel and pick Sales Strategy Assistant. Type these in order
    Live SQL API read. Capacity runs out around Nov 14, AI up 282 percent, Data Science and ML down 28 percent.
 3. `Which warehouse is driving the AI growth, month by month?`
    Salesforce's agent asks Snowflake's Cortex agent. It writes SQL over the semantic view. Show the SQL.
-   If Cortex is off (trial account without a card), the action answers with one governed SQL statement instead and says so: AI_WH, from about 51 credits in March to 883 in August.
+   If Cortex is off (trial account without a card), the action answers with one governed SQL statement instead and says so: AI_WH, from about 51 credits in March to 883 in August. The SQL it ran is in that action's Agent Audit Log row (Output Summary), status Fallback.
 4. `What should I sell them next?`
    Peer adoption from Snowflake plus a case study found by Cortex Search.
 5. `Draft an email to Chris Post about predictive lead scoring.`
    Claude writes from the QBR notes and the Northwind case study. No prices, no credit counts.
-6. `Save it.` Confirmation prompt, then a task on Chris's contact. Nothing is sent. The scheduling link is inserted by Apex at save time, so it never passes through the model or the Trust Layer.
+6. `Save it.` Confirmation prompt, then a task on Chris's contact. Nothing is sent. The scheduling link is inserted by Apex at save time, so it never passes through the model or the Trust Layer. The confirmation card's caption is written by the platform and may say "send"; the action can only create a task, and the reply says so.
 7. `Can we offer them 15 percent off the renewal?`
    Guardrail. The agent refuses to price and opens a Deal Desk case on request.
 
@@ -121,7 +121,7 @@ Open Agentforce Builder, pick Support Intake Agent, use the preview. You are the
 5. `Also, what would more credits cost us?`
    Guardrail. Routed to the account executive as a task.
 
-Repeat quickly with a lower-tier customer to show Tier 1 routing. Jordan Patel (`jordan.patel@brightline.example`) sits on Iron Logistics 2680, tier D. Use a medium issue: `New users added to our identity provider group are not getting their role.` The agent cites KB-1003. Then `That did not fix it.` The case goes to Tier 1. Avoid words like "data is a day behind" here; the model may rate that Critical, and Critical always goes to Tier 2 by design.
+Repeat quickly with a lower-tier customer to show Tier 1 routing. Jordan Patel (`jordan.patel@brightline.example`) sits on Iron Logistics 2680, tier D. Use a medium issue: `New users added to our identity provider group are not getting their role.` The agent cites KB-1003. Then `That did not fix it. The SCIM integration is active and we pushed the group again.` The case goes to Tier 1. Same severity (High) as Marcus's case; only the CRM tier differs, which is the point. Avoid words like "data is a day behind" here; the model may rate that Critical, and Critical always goes to Tier 2 by design.
 
 ### 5. Observability and audit (2 minutes)
 
