@@ -26,7 +26,8 @@ public with sharing class OutreachContext {
             Id accountId = ConsumptionService.toId(req.accountId);
             List<String> lines = new List<String>();
             lines.add('SENDER: ' + me.Name + (String.isBlank(me.Title) ? ', Account Executive' : ', ' + me.Title) + ', ' + me.Email
-                + '. Scheduling link: ' + (String.isBlank(me.Scheduling_Link__c) ? 'none, ask for times instead' : me.Scheduling_Link__c) + '.');
+                + '. Scheduling link: ' + (String.isBlank(me.Scheduling_Link__c) ? 'none, ask for times instead'
+                    : 'write the placeholder ' + SaveOutreachDraft.LINK_PLACEHOLDER + ' where the link goes; it is filled in when the draft is saved') + '.');
             lines.add('RECIPIENT: ' + describeContact(accountId, req.contactName));
             lines.add('FOCUS REQUESTED BY THE ACCOUNT EXECUTIVE: ' + (String.isBlank(req.focus) ? 'none; lead with the top use case' : req.focus));
             lines.add('');

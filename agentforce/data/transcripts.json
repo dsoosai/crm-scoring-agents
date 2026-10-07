@@ -1,0 +1,134 @@
+[
+  {
+    "title": "AE sales strategy: brief, telemetry, next play, outreach, guardrail, account plan (live org, Sep 25, 2026)",
+    "agent": "Sales Strategy Assistant",
+    "turns": [
+      {
+        "role": "user",
+        "text": "Brief me on Omega before my call with Chris Post."
+      },
+      {
+        "role": "agent",
+        "text": "Here is your executive brief on Omega Inc. with live Snowflake telemetry and CRM insights. Use this to prep for your call with Chris Post.\n\nEXECUTIVE BRIEF: OMEGA INC.\n\nSnapshot\nOmega Inc. is a 4,200-employee B2B SaaS company in San Francisco with CRM tier A and a score of 94.3 out of 100. The contract renews on December 19, 2026.\n\nWhat the telemetry says\n- Trailing 12 months: 63,570 credits consumed, up 62.4% year over year. Last 90 days up 10.6% versus prior 90. Data is live from Snowflake as of September 24, 2026.\n- Contract: 60,000 credits per year. Used 49,913 credits so far, or 83.2% of capacity. Run rate is 73,607 credits annualized. Capacity projected to run out around November 14, 2026, 35 days before term end.\n- Fastest growing workload: AI (Cortex) up 282% in the last 90 days. Declining workload: Data Science & ML down 28%.\n\nWhy it matters\n- The renewal opportunity of $540,000 closes December 15. Procurement requested a proposal by October 31 with a single number for FY27 capacity. The consumption trajectory supports expansion.\n- Chris Post raised frustration with manual lead routing in the September 10 QBR. Priya Raman wants AI in production by FY27. The 282% growth in AI workload confirms momentum for the copilot production rollout opportunity.\n\nRecommended next play\nPropose Predictive Lead and Account Scoring (UC01) to Chris Post. Four industry peers run it live: Helix Software, Northwind Analytics, Pinecrest Labs, and Quanta Systems. Peer outcomes include pipeline conversion up 12 to 20 percent and time to value of 6 weeks.\n\nRisks to watch\n- Data Science & ML consumption fell 28%. Alicia Gomez is evaluating a separate ML platform for training workloads.\n- Warehouse queuing during month-end close remains open at high priority. Marcus Lee raised it as a concern.\n- AI copilot pilot closes November 30 at 20% probability. Production decision follows the October pilot review."
+      },
+      {
+        "role": "user",
+        "text": "How is their consumption trending against the contract?"
+      },
+      {
+        "role": "agent",
+        "text": "Omega Inc. has used 49,913 credits so far this year, which is 83.2% of their 60,000-credit contract. Their trailing 12-month consumption is up 62.4% year over year, and the last 90 days are up 10.6% versus the prior 90 days. Their annualized run rate is 73,607 credits, projecting to use 112.1% of their contract by term end. At this pace, they will run out of capacity around November 14, 2026, about 35 days before the contract ends.\n\nSignals:\nExpansion: They will exceed their contracted credits before term end, supporting a renewal and expansion conversation.\nAdoption: AI (Cortex) workload grew 282% in the last 90 days.\nRisk: Data Science & ML workload fell 28%, which may indicate interest in a competing ML platform.\n\nSource: Live data from the Snowflake SQL API as of September 24, 2026.\n\nWould you like a recommended use case to pitch, a draft outreach email, or an account plan for Omega?"
+      },
+      {
+        "role": "user",
+        "text": "What should I sell them next?"
+      },
+      {
+        "role": "agent",
+        "text": "Here are the top three use cases to sell Omega Inc. next, based on peer adoption and live Snowflake data:\n\nPredictive Lead and Account Scoring (UC01)\nWhy it fits: Omega's AI workloads are up 282% and Chris Post wants AI in production. This use case aligns with their current growth and stated goals.\nPeer adoption: 4 industry peers (Helix Software, Northwind Analytics, Pinecrest Labs, Quanta Systems) run it live.\nResults: Pipeline conversion up 12-20%, reps work the right accounts first, time to value is about 6 weeks.\nCase study: Northwind Analytics moved from manual lead scoring to a data platform model, raising lead-to-opportunity conversion by 18% and ending spreadsheet workarounds.\nPrerequisites: CRM history with outcomes and product usage telemetry.\nEstimated footprint: 9,100 credits per year.\n\nRevenue Forecasting and Pipeline Analytics (UC02)\nWhy it fits: Omega's growth requires accurate forecasting for sales and finance alignment.\nPeer adoption: 2 peers (Northwind Analytics, Quanta Systems).\nResults: Forecast error down about 30%, one forecast for all teams, time to value is about 8 weeks.\nCase study: Quanta Systems unified sales and finance forecasts, reducing forecast error by 32% and shortening forecast calls.\nPrerequisites: Opportunity history, consumption, and billing data.\nEstimated footprint: 7,900 credits per year.\n\nCustomer Churn and Expansion Prediction (UC03)\nWhy it fits: With rapid growth, retention is key. This use case helps flag churn and expansion opportunities earlier.\nPeer adoption: 2 peers (Helix Software, Pinecrest Labs).\nResults: Gross retention up 2-4 points, earlier save plays, time to value is about 8 weeks.\nCase study: Helix Software used usage and support data to predict churn, raising gross retention by 3 points.\nPrerequisites: Usage telemetry, support cases, contract data.\nEstimated footprint: 6,800 credits per year.\n\nWould you like a draft outreach email to Chris Post or an account plan for Omega?"
+      },
+      {
+        "role": "user",
+        "text": "Draft an email to Chris Post about predictive lead scoring."
+      },
+      {
+        "role": "agent",
+        "text": "Here is a draft outreach email to Chris Post about predictive lead and account scoring:\n\nSubject: Predictive lead scoring for Omega's RevOps team\n\nHi Chris,\n\nThank you for the time at the QBR on September 10. You asked how peers score leads and forecast consumption, and you mentioned your team still routes leads manually.\n\nPredictive Lead and Account Scoring addresses this directly. Four peers in your industry run it live: Helix Software, Northwind Analytics, Pinecrest Labs and Quanta Systems. The typical outcome is pipeline conversion up 12 to 20 percent because reps work the right accounts first.\n\nNorthwind Analytics moved from hand-set rules to a gradient-boosted model on the data platform. CRM history and product usage sit in one place. Scores and the top three reasons write back to the CRM every night. Lead-to-opportunity conversion rose 18 percent within two quarters and reps stopped maintaining their own spreadsheets.\n\nThe workload combines your CRM history with product usage telemetry. Time to value runs about six weeks.\n\nCan we schedule a 30-minute working session to walk through the approach and build a plan for Omega? You can book directly here: [scheduling link].\n\nDaniel\n\nWould you like any changes to this draft, or should I save it for your review?"
+      },
+      {
+        "role": "user",
+        "text": "Save it."
+      },
+      {
+        "role": "agent",
+        "text": "You're about to save this email draft for Chris Post. [Confirm] [Cancel]"
+      },
+      {
+        "role": "user",
+        "text": "(Confirm)"
+      },
+      {
+        "role": "agent",
+        "text": "The draft outreach email to Chris Post about predictive lead scoring is saved as a task for your review. You can edit or send it when ready. Would you like a brief on another account, consumption details, or help with account planning?"
+      },
+      {
+        "role": "user",
+        "text": "Can we offer them 15 percent off the renewal?"
+      },
+      {
+        "role": "agent",
+        "text": "I cannot quote, estimate, or approve discounts or contract terms. I can open a Deal Desk review with a summary of your request if you'd like. Would you like me to start that?"
+      },
+      {
+        "role": "user",
+        "text": "Yes, open the Deal Desk review."
+      },
+      {
+        "role": "agent",
+        "text": "Opportunity Name: Omega Inc. Renewal. Request Summary: Request to offer 15 percent off the renewal for Omega Inc. [Confirm] [Cancel]"
+      },
+      {
+        "role": "user",
+        "text": "(Confirm)"
+      },
+      {
+        "role": "agent",
+        "text": "Deal Desk case 00001030 is open for your request to offer 15 percent off the renewal for Omega Inc. Deal Desk will review and reply, usually within one business day.\n\nWould you like to see consumption data that supports the renewal, or help with another account?"
+      },
+      {
+        "role": "user",
+        "text": "Create an FY27 account plan for Omega."
+      },
+      {
+        "role": "agent",
+        "text": "You are about to create a new plan for fiscal year FY27. [Confirm] [Cancel]"
+      },
+      {
+        "role": "user",
+        "text": "(Confirm)"
+      },
+      {
+        "role": "agent",
+        "text": "The FY27 account plan for Omega Inc. is being drafted. It will cover five sections: consumption trends, recommended use cases, customer landscape, SWOT, and account vision. The plan uses live Snowflake telemetry and CRM data. You will get a notification when it is ready for review.\n\nYou can open the plan at [Omega Inc. FY27 Account Plan].\n\nWould you like to check the plan status or need help with anything else for Omega?"
+      }
+    ]
+  },
+  {
+    "title": "Support intake: verify, Snowflake knowledge, route by CRM tier, pricing guardrail (live org, Sep 25, 2026)",
+    "agent": "Support Intake Agent",
+    "turns": [
+      {
+        "role": "user",
+        "text": "Our finance dashboards hang for 20 minutes at month-end."
+      },
+      {
+        "role": "agent",
+        "text": "Can you please provide your email address so I can verify your account before we continue troubleshooting?"
+      },
+      {
+        "role": "user",
+        "text": "marcus.lee@omega-inc.example"
+      },
+      {
+        "role": "agent",
+        "text": "I found steps that often resolve month-end dashboard slowdowns (KB-1018, KB-1001):\n\nSchedule heavy batch jobs outside business hours.\nGive finance dashboards their own multi-cluster warehouse.\nUse result caching for repeated reports.\nCheck if queries are queuing: if so, set the warehouse to multi-cluster (min 1, max 3-5 clusters, Standard scaling).\nSplit batch jobs onto a separate warehouse so dashboards are not blocked.\n\nDid these steps help, or are you still seeing delays? If you need more detail, I can give the exact setup steps."
+      },
+      {
+        "role": "user",
+        "text": "We tried that and it still queues."
+      },
+      {
+        "role": "agent",
+        "text": "I opened case 00001031 and sent it to our Tier 2 engineers with a summary of what we tried, so you will not need to repeat yourself. They will review the query queueing and reach out soon.\n\nIs there any error text you see, or does it just hang? Would you like help with anything else while you wait?"
+      },
+      {
+        "role": "user",
+        "text": "Also, what would more credits cost us?"
+      },
+      {
+        "role": "agent",
+        "text": "Pricing and contract questions are handled by your account team. I have sent your credits question to them, and they will reply soon.\n\nIs there anything else I can help with while you wait?"
+      }
+    ]
+  }
+]

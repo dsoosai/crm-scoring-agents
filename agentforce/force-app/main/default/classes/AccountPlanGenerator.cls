@@ -114,7 +114,8 @@ public with sharing class AccountPlanGenerator implements Queueable, Database.Al
 
         plan.Grounding_Snapshot__c = AgentAuditLogger.clip(String.join(g, '\n'), 131000);
         plan.Grounding_Source__c = AgentAuditLogger.clip(r.live
-            ? 'Snowflake SQL API' + (r.evidenceSource == null ? '' : ' + ' + r.evidenceSource) + ' (live, query ' + r.queryId + ')'
+            ? 'Snowflake SQL API, live (query ' + r.queryId + ')'
+                + (r.evidenceSource == null || r.evidenceSource == 'Snowflake SQL API' ? '' : '. Case studies: ' + r.evidenceSource.replace('Snowflake SQL API (Cortex Search unavailable)', 'keyword search, Cortex Search off'))
             : r.source, 255);
         plan.Status__c = 'Drafting';
         audit.source(r.live ? 'Snowflake SQL API' : r.source).queryId(r.queryId).output(plan.Grounding_Snapshot__c);

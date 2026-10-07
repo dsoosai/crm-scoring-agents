@@ -1,6 +1,7 @@
 /**
  * Test double for the Snowflake SQL API and Cortex Search REST API.
- * mode: 'ok' (everything works), 'noSearch' (Cortex Search fails, SQL works), 'down' (all calls fail).
+ * mode: 'ok' (everything works), 'noSearch' (Cortex Search fails, SQL works), 'noCortex' (the Cortex
+ * agent fails, SQL works), 'down' (all calls fail).
  */
 @IsTest
 public class SnowflakeMock implements HttpCalloutMock {
@@ -16,7 +17,7 @@ public class SnowflakeMock implements HttpCalloutMock {
         res.setHeader('Content-Type', 'application/json');
         String url = req.getEndpoint();
         String body = req.getBody() == null ? '' : req.getBody();
-        if (mode == 'down' || (mode == 'noSearch' && url.contains(':query'))) {
+        if (mode == 'down' || (mode == 'noSearch' && url.contains(':query')) || (mode == 'noCortex' && body.contains('DATA_AGENT_RUN'))) {
             res.setStatusCode(401);
             res.setBody('{"code":"390303","message":"Invalid OAuth access token."}');
             return res;
@@ -47,6 +48,12 @@ public class SnowflakeMock implements HttpCalloutMock {
         } else if (body.contains('V_WORKLOAD_MONTHLY')) {
             res.setBody(statement(new List<String>{ 'MONTH', 'WORKLOAD', 'CREDITS' },
                 new List<List<String>>{ new List<String>{ '2026-08', 'AI (Cortex)', '1210.5' } }));
+        } else if (body.contains('JOIN ACCOUNTS')) {
+            res.setBody(statement(new List<String>{ 'MONTH', 'WAREHOUSE_NAME', 'WORKLOAD', 'CREDITS', 'LAST_DAY' },
+                new List<List<String>>{
+                    new List<String>{ '2026-07', 'AI_WH', 'AI (Cortex)', '627.0', '2026-07-31' },
+                    new List<String>{ '2026-08', 'AI_WH', 'AI (Cortex)', '882.8', '2026-08-31' },
+                    new List<String>{ '2026-09', 'AI_WH', 'AI (Cortex)', '812.4', '2026-09-24' } }));
         } else if (body.contains('DATA_AGENT_RUN')) {
             String agentJson = '{"role":"assistant","content":[{"type":"tool_use","tool_use":{"name":"Consumption"}},'
                 + '{"type":"tool_result","tool_result":{"content":[{"json":{"sql":"SELECT 1"}}]}},'

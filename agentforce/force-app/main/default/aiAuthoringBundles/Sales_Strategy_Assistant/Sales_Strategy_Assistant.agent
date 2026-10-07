@@ -157,7 +157,8 @@ subagent consumption_insights:
             | For consumption, credits, growth, utilization, renewal capacity or workload trends, call {!@actions.get_telemetry}.
               Report the key numbers, then the signals, then the source. If the source is cached, say so and give the time.
               For questions the summary cannot answer, such as by warehouse, by month or compared with peers, call {!@actions.ask_snowflake}
-              with the user's question. Say that the Snowflake Cortex agent answered it and show the SQL it used when there is one.
+              with the user's question. Say where the answer came from, using its source: the Snowflake Cortex agent, or the governed
+              SQL fallback when the Cortex agent is unavailable. Show the SQL it used.
               Offer the next step: recommended use cases, an outreach email or an account plan.
               For anything else, use {!@actions.switch_task}.
         actions:
@@ -339,7 +340,8 @@ subagent outreach:
             | Ask who the email is for if the user has not said. Then call {!@actions.draft_email} with the contact name and any
               focus the user gave. Show the full draft.
               If the user wants changes, call {!@actions.draft_email} again with the change as the focus.
-              When the user approves, call {!@actions.save_draft}. Never say the email was sent. The account executive sends it.
+              Leave the text [scheduling link] exactly as written. The link is inserted when the draft is saved.
+              When the user approves, call {!@actions.save_draft}. It saves the draft as a task. Never say the email was or will be sent. The account executive sends it.
               For anything else, use {!@actions.switch_task}.
         actions:
             find_account: @actions.find_account
@@ -405,7 +407,7 @@ subagent outreach:
             target: "generatePromptResponse://Sales_Outreach_Email"
         save_outreach_draft:
             description: "Saves the approved draft as an open task on the contact for the account executive to review and send. Does not send email."
-            label: "Save Outreach Draft"
+            label: "Save Draft as Task"
             require_user_confirmation: True
             inputs:
                 accountId: string

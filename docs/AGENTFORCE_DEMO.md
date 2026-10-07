@@ -91,22 +91,23 @@ Open the Agentforce panel and pick Sales Strategy Assistant. Type these in order
    Live SQL API read. Capacity runs out around Nov 14, AI up 282 percent, Data Science and ML down 28 percent.
 3. `Which warehouse is driving the AI growth, month by month?`
    Salesforce's agent asks Snowflake's Cortex agent. It writes SQL over the semantic view. Show the SQL.
+   If Cortex is off (trial account without a card), the action answers with one governed SQL statement instead and says so: AI_WH, from about 51 credits in March to 883 in August.
 4. `What should I sell them next?`
    Peer adoption from Snowflake plus a case study found by Cortex Search.
 5. `Draft an email to Chris Post about predictive lead scoring.`
    Claude writes from the QBR notes and the Northwind case study. No prices, no credit counts.
-6. `Save it.` Confirmation prompt, then a task on Chris's contact. Nothing is sent.
+6. `Save it.` Confirmation prompt, then a task on Chris's contact. Nothing is sent. The scheduling link is inserted by Apex at save time, so it never passes through the model or the Trust Layer.
 7. `Can we offer them 15 percent off the renewal?`
    Guardrail. The agent refuses to price and opens a Deal Desk case on request.
 
-Talking points: gated actions, variables carry IDs, human confirmation on writes, the price guardrail is both an instruction and a routed action.
+Talking points: gated actions, variables carry IDs, human confirmation on writes, the price guardrail is both an instruction and a routed action. Open the Trace tab once: the reasoning steps, the action calls and the Trust Layer's output evaluation (GROUNDED).
 
 ### 3. Automated account plan (3 minutes)
 
 8. `Create an FY27 account plan for Omega.` Confirm.
    Open the link. The flow grounds the plan in Snowflake first, then Claude drafts two sections at a time. Refresh as sections fill. A bell notification arrives when it is ready.
 
-Talking points: record-triggered flow, chained queueables so no callout follows DML, the exact grounding saved on the record for review, the rep approves.
+Talking points: record-triggered flow, chained queueables so no callout follows DML, the exact grounding saved on the record for review, the rep approves. The plan picks up what the agent did minutes earlier: the saved email task and the Deal Desk case show up in the 90-day plan and the customer landscape.
 
 ### 4. Support case intake agent (3 minutes)
 
@@ -120,7 +121,7 @@ Open Agentforce Builder, pick Support Intake Agent, use the preview. You are the
 5. `Also, what would more credits cost us?`
    Guardrail. Routed to the account executive as a task.
 
-Repeat quickly with `jordan.patel@brightline.example` to show a lower-tier account going to Tier 1.
+Repeat quickly with a lower-tier customer to show Tier 1 routing. Jordan Patel (`jordan.patel@brightline.example`) sits on Iron Logistics 2680, tier D. Use a medium issue: `New users added to our identity provider group are not getting their role.` The agent cites KB-1003. Then `That did not fix it.` The case goes to Tier 1. Avoid words like "data is a day behind" here; the model may rate that Critical, and Critical always goes to Tier 2 by design.
 
 ### 5. Observability and audit (2 minutes)
 
@@ -145,7 +146,7 @@ Order matters. Steps marked "you" need a person at the keyboard.
 5. **Post-deploy.** Run `agentforce/scripts/post_deploy_setup.apex`. It assigns permission sets, adds you to the queues and creates the Einstein Agent User; put the username it prints into `Support_Intake_Agent.agent` before step 4's last deploy. Set the scheduling link in a second run (anonymous Apex sees the new User field only after the permission set applies).
 6. **Token (you).** Setup, Named Credentials, External Credentials, Snowflake PAT, principal `AgentforcePrincipal`, Edit, Add authentication parameter: name `token`, value the PAT. Save.
 7. **Activate templates.** Deployed templates arrive inactive. Retrieve them, add `<activeVersionIdentifier>` equal to their `<versionIdentifier>`, and deploy again, or click Activate on each in Prompt Builder.
-8. **Agents.** In Agentforce Builder, preview, then Commit Version and Activate each agent.
+8. **Agents.** In Agentforce Builder, preview, then Commit Version and Activate each agent. After a later deploy of the `.agent` files, create a new version, commit it and activate it. The Preview input is a rich-text editor; to drive it from a script, focus `.ql-editor.chat-box`, use `document.execCommand('insertText')`, then dispatch Enter.
 9. **Data.** Run `agentforce/scripts/seed_omega.apex`. The Account layout gets Account Plans, Consumption Snapshots and Agent Audit Logs related lists.
 10. **Smoke test.** Run the telemetry action for Omega from Apex or ask the sales agent for Omega's consumption. The audit log row should say `Snowflake SQL API` with a query Id.
 

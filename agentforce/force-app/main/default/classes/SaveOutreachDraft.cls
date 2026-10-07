@@ -4,6 +4,9 @@
  */
 public with sharing class SaveOutreachDraft {
 
+    /** The prompt writes this placeholder. The link is inserted here, so it never passes through the LLM. */
+    public static final String LINK_PLACEHOLDER = '[scheduling link]';
+
     public class Request {
         @InvocableVariable(label='Account Id' description='Salesforce Id of the account' required=true)
         public String accountId;
@@ -32,7 +35,7 @@ public with sharing class SaveOutreachDraft {
             String term = '%' + (req.contactName == null ? '' : req.contactName.trim()) + '%';
             List<Contact> cs = [SELECT Id, Name FROM Contact WHERE AccountId = :accountId AND Name LIKE :term LIMIT 1];
             String subject = 'Email draft';
-            String body = req.emailDraft == null ? '' : req.emailDraft.trim();
+            String body = fillLink(req.emailDraft == null ? '' : req.emailDraft.trim());
             if (body.startsWithIgnoreCase('Subject:')) {
                 subject = body.substringBefore('\n').substringAfter(':').trim();
             }
@@ -53,5 +56,18 @@ public with sharing class SaveOutreachDraft {
         }
         AgentAuditLogger.flush();
         return out;
+    }
+
+    /** Replaces the placeholder with the account executive's scheduling link, or drops the phrase if there is none. */
+    @TestVisible
+    private static String fillLink(String body) {
+        if (!body.contains(LINK_PLACEHOLDER)) {
+            return body;
+        }
+        String link = [SELECT Scheduling_Link__c FROM User WHERE Id = :UserInfo.getUserId()].Scheduling_Link__c;
+        if (String.isNotBlank(link)) {
+            return body.replace(LINK_PLACEHOLDER, link);
+        }
+        return body.replace(': ' + LINK_PLACEHOLDER, '').replace(' ' + LINK_PLACEHOLDER, '').replace(LINK_PLACEHOLDER, '');
     }
 }

@@ -111,6 +111,25 @@ private class AgenticDemoTest {
     }
 
     @IsTest
+    static void askSnowflakeAnalystFallsBackToGovernedSql() {
+        Test.setMock(HttpCalloutMock.class, new SnowflakeMock('noCortex'));
+        AskSnowflakeAnalyst.Request req = new AskSnowflakeAnalyst.Request();
+        req.question = 'Which warehouse is driving the AI growth, month by month?';
+        req.accountName = 'Omega Inc.';
+        req.agentName = AGENT;
+        Test.startTest();
+        AskSnowflakeAnalyst.Response res = AskSnowflakeAnalyst.ask(new List<AskSnowflakeAnalyst.Request>{ req })[0];
+        Test.stopTest();
+        System.assert(res.answer.contains('AI_WH drives the growth'), res.answer);
+        System.assert(res.answer.contains('month to date'), res.answer);
+        System.assert(res.source.contains('governed fallback'), res.source);
+        System.assert(res.generatedSql.contains('AI (Cortex)'), res.generatedSql);
+        System.assertEquals('Fallback', [SELECT Status__c FROM Agent_Audit_Log__c WHERE Action__c = 'Ask Snowflake Analyst'].Status__c);
+        System.assertEquals('ALL', AskSnowflakeAnalyst.workloadIn('Credits by month?'));
+        System.assertEquals('Data Science & ML', AskSnowflakeAnalyst.workloadIn('Why is ML down?'));
+    }
+
+    @IsTest
     static void createAccountPlanRunsGrounding() {
         Test.setMock(HttpCalloutMock.class, new SnowflakeMock('ok'));
         CreateAccountPlan.Request req = new CreateAccountPlan.Request();
@@ -183,10 +202,12 @@ private class AgenticDemoTest {
         SaveOutreachDraft.Request sd = new SaveOutreachDraft.Request();
         sd.accountId = accountId;
         sd.contactName = 'Chris Post';
-        sd.emailDraft = 'Subject: Scoring ideas\nHi Chris,';
+        sd.emailDraft = 'Subject: Scoring ideas\nHi Chris, book here: ' + SaveOutreachDraft.LINK_PLACEHOLDER + '.';
         sd.agentName = AGENT;
         SaveOutreachDraft.save(new List<SaveOutreachDraft.Request>{ sd });
-        System.assertEquals('Review and send: Scoring ideas', [SELECT Subject FROM Task LIMIT 1].Subject);
+        Task draft = [SELECT Subject, Description FROM Task LIMIT 1];
+        System.assertEquals('Review and send: Scoring ideas', draft.Subject);
+        System.assert(!draft.Description.contains(SaveOutreachDraft.LINK_PLACEHOLDER), draft.Description);
 
         RecordAgentFeedback.Request fb = new RecordAgentFeedback.Request();
         fb.rating = 'Helpful';
