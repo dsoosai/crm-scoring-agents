@@ -1,8 +1,8 @@
 # Agentic Enterprise demo: Agentforce, Claude, Snowflake and Hugging Face
 
-One customer story, four agents, three platforms. The account is Omega Inc., a fictional B2B SaaS company that runs on a data platform vendor's capacity contract. Everything below runs in a Salesforce Developer Edition org, a Snowflake trial account and a public Hugging Face Space.
+One customer story, six agents, three platforms. Two agents run on Agentforce, one runs inside Snowflake, and three keep the scoring models behind the CRM tier accurate. The account is Omega Inc., a fictional B2B SaaS company that runs on a data platform vendor's capacity contract. Everything below runs in a Salesforce Developer Edition org, a Snowflake trial account and a public Hugging Face Space.
 
-## The four use cases
+## What the demo covers
 
 | Use case | Agentforce piece | What it proves |
 |---|---|---|
@@ -10,6 +10,7 @@ One customer story, four agents, three platforms. The account is Omega Inc., a f
 | 2. Automated account plan | `Account_Plan_Autofill` flow, `AccountPlanGenerator`, five Prompt Builder templates on Claude | Record-triggered automation. One click creates a five-section plan grounded in Salesforce and Snowflake. |
 | 3. Support case intake agent | `Support_Intake_Agent` (service agent, Einstein Agent User) | Customer-facing agent with identity check, knowledge from Snowflake Cortex Search, and routing driven by the CRM score. |
 | 4. Observability and audit | `Agent_Audit_Log__c`, Snowflake query history, Agentforce session tracing | Every action is logged with source, latency, guardrail and feedback, and every Snowflake read is traceable by query Id. |
+| 5. Score lifecycle | Monitor, Builder and Governance agents (Python, A2A and MCP), model registry in Snowflake, dashboard on the Hugging Face Space | The account tier that routes support cases comes from a model that agents watch for drift, rebuild and gate before every promotion. |
 
 ## Architecture
 
@@ -22,7 +23,7 @@ flowchart LR
     FL[Account Plan Autofill flow]
     AX[Apex actions]
     AUD[(Agent Audit Log)]
-    CRM[(Accounts, contacts,<br/>opportunities, cases)]
+    CRM[(Accounts, contacts,<br/>opportunities, cases,<br/>scores and tiers)]
   end
   subgraph SNOW[Snowflake]
     SQL[SQL API v2]
@@ -30,10 +31,16 @@ flowchart LR
     CA[Cortex Agent on Claude<br/>Analyst + Search]
     SV[Semantic view]
     TEL[(Telemetry, contracts,<br/>peer adoption)]
+    REG[(Model registry,<br/>scores and audit)]
     COCO[Cortex Code in Snowsight]
   end
+  subgraph LC[Score lifecycle: Python agents over A2A, tools over MCP]
+    MON[Monitor agent<br/>drift and accuracy]
+    BLD[Builder agent<br/>recalibrate, fine-tune, retrain]
+    GOV[Governance agent<br/>gates, approval, rollback]
+  end
   subgraph HF[Hugging Face]
-    MOD[Champion scoring model<br/>and lifecycle dashboard]
+    DASH[Lifecycle dashboard<br/>Space]
     DS[Demo dataset]
   end
   SSA --> AX
@@ -42,10 +49,13 @@ flowchart LR
   FL --> AX --> PB
   AX -- named credential + PAT --> SQL --> TEL
   AX --> CS
-  AX --> CA --> SV --> TEL
+  AX -- Cortex Agents REST API --> CA --> SV --> TEL
   AX --> AUD
   PB --> CRM
-  MOD -- scores and reasons --> CRM
+  MON -- A2A --> BLD -- A2A --> GOV
+  GOV -- scores, tiers and reasons --> CRM
+  GOV --> REG
+  REG -. cycle history .-> DASH
   DS -. same CSVs .- TEL
   COCO --> SV
 ```
@@ -56,7 +66,8 @@ Design choices worth saying out loud:
 - **Least privilege.** Salesforce calls Snowflake as `AGENTFORCE_SVC`, a service user with a programmatic access token restricted to the read-only `AGENTFORCE_READER` role, stored in an External Credential. The token never appears in code, logs or prompts.
 - **Hybrid reasoning.** Agent Script makes the parts that must be deterministic deterministic: account resolution gates every action (`available when @variables.account_id != ""`), IDs flow between actions through variables instead of the LLM, and writes need user confirmation. The LLM handles intent, tone and synthesis.
 - **Claude in both places.** Prompt Builder templates run Claude through the Einstein Trust Layer (masking, zero retention, toxicity scoring). The Snowflake Cortex agent runs `claude-sonnet-4-6` inside Snowflake's boundary. Salesforce's agent asks Snowflake's agent. That is agent to agent across two trust boundaries.
-- **The score is a product.** Omega's tier A score (94.3, model `account-v12`) comes from the champion model the CRM scoring agents manage and publish on Hugging Face. Support routing uses it.
+- **The score is a product.** Support routing reads the account tier, so the score behind it needs a lifecycle. Three agents run it. The Monitor flags drift. The Builder builds challengers and cannot promote. Governance gates every promotion, asks RevOps to approve account models and writes scores back to Salesforce. Models, scores and the audit trail live in Snowflake. The Hugging Face Space shows every cycle. Omega's own score (94.3, `account-v12`) was seeded for the story in the model's format. The 500 scored accounts and 500 scored leads in the org came from the models.
+- **Two protocols, two jobs.** MCP connects an assistant to tools: the lifecycle's MCP server gives Claude Desktop ten tools, from `check_drift` to `rollback_model`. A2A connects agents to each other: Monitor, Builder and Governance publish agent cards and hand work over with `message/send`. The Salesforce-to-Snowflake call is agent to agent in function, but it runs over Snowflake's Cortex Agents REST API from an Apex action, not over the A2A protocol.
 
 ## Omega Inc. in numbers (from the Snowflake views)
 
@@ -90,8 +101,8 @@ Open the Agentforce panel and pick Sales Strategy Assistant. Type these in order
 2. `How is their consumption trending against the contract?`
    Live SQL API read. Capacity runs out around Nov 14, AI up 282 percent, Data Science and ML down 28 percent.
 3. `Which warehouse is driving the AI growth, month by month?`
-   Salesforce's agent asks Snowflake's Cortex agent. It writes SQL over the semantic view. Show the SQL.
-   If Cortex is off (trial account without a card), the action answers with one governed SQL statement instead and says so: AI_WH, from about 51 credits in March to 883 in August. The SQL it ran is in that action's Agent Audit Log row (Output Summary), status Fallback.
+   Salesforce's agent asks Snowflake's Cortex agent, which writes SQL over the semantic view. It takes about 40 seconds, so talk through it. AI_WH, from about 51 credits in March to 883 in August. September is month to date.
+   If the Cortex agent times out or is unavailable, the action answers with one governed SQL statement instead and says so. The SQL it ran is in that action's Agent Audit Log row (Output Summary), status Fallback.
 4. `What should I sell them next?`
    Peer adoption from Snowflake plus a case study found by Cortex Search.
 5. `Draft an email to Chris Post about predictive lead scoring.`
@@ -130,10 +141,21 @@ Repeat quickly with a lower-tier customer to show Tier 1 routing. Jordan Patel (
 - Agentforce session tracing in Builder for the reasoning steps.
 - Kill switch: the agent still answers from the cached snapshot and says so if Snowflake is unreachable.
 
-### 6. Close with CoCo and Hugging Face (1 minute)
+### 6. Where the tier comes from: the score lifecycle (90 seconds, when asked)
 
-- In Snowsight, open Cortex Code and ask: `Chart Omega's monthly credits by workload from V_WORKLOAD_MONTHLY.` The same governed data, explored by an analyst in natural language.
-- The Hugging Face Space: the scoring model's lifecycle and the demo dataset. The score the agents rely on is monitored, retrained and promoted with gates.
+Use this when someone asks where the tier comes from or how the score stays accurate. Open the Hugging Face Space: https://huggingface.co/spaces/dsoosai/crm-scoring-agents.
+
+Say first: the 15 months on this page are generated data with drift scripted in. The agents, the gates and the code are real.
+
+1. **Leads, quality chart.** On the latest outcomes the agent-managed model scores 0.74 AUC, the frozen first model 0.69 and the v0 rules 0.63. "A score nobody maintains decays."
+2. **Drift heatmap, November 2025.** A paid campaign pushed site visits to PSI 0.26, the action band. The Monitor flagged it the day the leads landed, a month before outcomes confirmed it.
+3. **Cycle timeline.** December: every challenger failed the gates, so the agent kept the champion and said why. January: a retrain won, 0.763 against 0.699, and promoted itself. Lead models need no human.
+4. **Accounts.** 2025Q4: a recalibration was chosen over a full retrain because 4% of accounts changed tier instead of 23%. Tiers drive territories, so stability is a gate. 2026Q2: a fine-tune was promoted after RevOps approved it.
+5. **Model registry.** Every version, its method, its AUC and who approved it.
+
+Close: "The tier that sent Marcus to Tier 2 comes from this model. Agents watch it, rebuild it and gate every change."
+
+Optional, only if they ask to see Snowflake itself: in Snowsight, open Cortex Code and ask `Chart Omega's monthly credits by workload from V_WORKLOAD_MONTHLY.` The same governed data, explored by an analyst in natural language.
 
 ## Setup runbook
 
@@ -165,4 +187,7 @@ Order matters. Steps marked "you" need a person at the keyboard.
 - **Why not copy the data into Salesforce?** Freshness, cost and governance. Telemetry is large and changes daily. Reading it where it lives keeps one source of truth and one set of access controls.
 - **Why Agent Script and not only prompts?** Some steps must not be left to a model: which account, which Id, when a write happens, what is never allowed. Script makes those rules code and leaves judgment to the model.
 - **How do you evaluate it?** Agentforce Testing Center for utterance-level tests, the audit log for production feedback, and thumbs up or down captured by the feedback action into the same table.
+- **Is the Salesforce-to-Snowflake call A2A?** Not the protocol. It is agent to agent in function, over Snowflake's Cortex Agents REST API from an Apex action. The A2A protocol runs between the three lifecycle agents. In production I'd move the Snowflake call to a standard protocol as both platforms add one.
+- **Where does the tier come from?** A gradient-boosted model with a calibration layer, managed by the Monitor, Builder and Governance agents. Show the Hugging Face dashboard (section 6).
+- **Is Omega real?** No. Omega is a fictional customer with generated telemetry, and its score was seeded for the story. The org, the agents, Snowflake and the audit trail are real.
 - **What would change in production?** Data 360 zero-copy federation instead of Apex callouts, a network policy on the Snowflake service user, Salesforce Knowledge or a Data Library alongside Cortex Search, an Embedded Service channel for the support agent, and platform events or a scheduler instead of chained queueables.
